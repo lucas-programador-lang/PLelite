@@ -38,8 +38,29 @@ function traduzirErro(codigo) {
     case 'auth/user-not-found': return 'Usuário não encontrado.';
     case 'auth/wrong-password': return 'Senha incorreta.';
     case 'auth/invalid-credential': return 'Credenciais inválidas.';
+    case 'auth/too-many-requests': return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
+    case 'auth/network-request-failed': return 'Falha de conexão. Verifique sua internet.';
     default: return 'Ocorreu um erro. Tente novamente. (' + codigo + ')';
   }
+}
+
+// Mostra mensagem numa div #form-message, se ela existir na página.
+// Se não existir, cai no alert() como antes (compatibilidade com páginas antigas).
+function exibirMensagem(texto, isError = true) {
+  const el = document.getElementById('form-message');
+  if (el) {
+    el.textContent = texto;
+    el.style.color = isError ? '#e05252' : '#4caf50';
+  } else {
+    alert(texto);
+  }
+}
+
+// Ativa/desativa o botão de submit com texto de carregamento.
+function setBotaoCarregando(btn, carregando, textoOriginal, textoCarregando) {
+  if (!btn) return;
+  btn.disabled = carregando;
+  btn.textContent = carregando ? textoCarregando : textoOriginal;
 }
 
 // -----------------------------------------------------
@@ -47,12 +68,18 @@ function traduzirErro(codigo) {
 // -----------------------------------------------------
 const registerForm = document.getElementById('register-form');
 if (registerForm) {
+  const submitBtn = document.getElementById('submit-btn');
+
   registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const nome = document.getElementById('nome').value;
-    const whatsapp = document.getElementById('whatsapp').value;
-    const email = document.getElementById('email').value;
+    exibirMensagem('', false);
+
+    const nome = document.getElementById('nome').value.trim();
+    const whatsapp = document.getElementById('whatsapp').value.trim();
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
+
+    setBotaoCarregando(submitBtn, true, 'Cadastrar', 'Cadastrando...');
 
     try {
       // 1. Cria o usuário no Auth
@@ -69,11 +96,12 @@ if (registerForm) {
         isVIP: false  // Trava ativada, admin precisa alterar para true
       });
 
-      alert('Cadastro realizado com sucesso!');
+      exibirMensagem('Cadastro realizado com sucesso! Redirecionando...', false);
       window.location.href = 'index.html';
 
     } catch (error) {
-      alert(traduzirErro(error.code));
+      exibirMensagem(traduzirErro(error.code));
+      setBotaoCarregando(submitBtn, false, 'Cadastrar', 'Cadastrando...');
     }
   });
 }
@@ -83,16 +111,23 @@ if (registerForm) {
 // -----------------------------------------------------
 const loginForm = document.getElementById('login-form');
 if (loginForm) {
+  const loginBtn = loginForm.querySelector('button[type="submit"]');
+
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('email').value;
+    exibirMensagem('', false);
+
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
+
+    setBotaoCarregando(loginBtn, true, 'Entrar', 'Entrando...');
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
       window.location.href = 'index.html';
     } catch (error) {
-      alert(traduzirErro(error.code));
+      exibirMensagem(traduzirErro(error.code));
+      setBotaoCarregando(loginBtn, false, 'Entrar', 'Entrando...');
     }
   });
 }
@@ -106,15 +141,15 @@ if (resetBtn) {
     e.preventDefault();
     const email = document.getElementById('email').value;
     if (!email) {
-      alert('Por favor, digite seu e-mail no campo acima para redefinir a senha.');
+      exibirMensagem('Por favor, digite seu e-mail no campo acima para redefinir a senha.');
       return;
     }
     
     try {
       await sendPasswordResetEmail(auth, email);
-      alert('Link de recuperação enviado para o seu e-mail!');
+      exibirMensagem('Link de recuperação enviado para o seu e-mail!', false);
     } catch (error) {
-      alert(traduzirErro(error.code));
+      exibirMensagem(traduzirErro(error.code));
     }
   });
 }
