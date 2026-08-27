@@ -44,6 +44,7 @@ onAuthStateChanged(auth, async (user) => {
   loadPosts();
   loadValidations();
   loadRaffle();
+  loadNotifications();
 });
 
 /* ---------- Abas ---------- */
@@ -95,6 +96,7 @@ async function loadUsers() {
   const snap = await get(ref(db, "users"));
   usersCache = snap.exists() ? snap.val() : {};
   renderUsers(usersCache);
+  populateNotifTargets();
 
   document.getElementById("userSearch").addEventListener("input", (e) => {
     const term = e.target.value.trim().toLowerCase();
@@ -388,6 +390,69 @@ async function loadRaffle() {
     btn.addEventListener("click", async () => {
       await remove(ref(db, `raffleEntries/${btn.dataset.id}`));
       loadRaffle();
+    });
+  });
+}
+
+/* ---------- Avisos / notificações ---------- */
+
+function populateNotifTargets() {
+  const select = document.getElementById("nTarget");
+  const options = Object.entries(usersCache)
+    .map(([uid, u]) => `<option value="${uid}">${escapeHtml(u.name || u.email)}</option>`)
+    .join("");
+  select.innerHTML = `<option value="all">Todos os usuários</option>${options}`;
+}
+
+document.getElementById("notifForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const submitBtn = document.getElementById("notifSubmit");
+  submitBtn.disabled = true;
+
+  const target = document.getElementById("nTarget").value;
+  const newRef = push(ref(db, "notifications"));
+  await set(newRef, {
+    title: document.getElementById("nTitle").value.trim(),
+    type: document.getElementById("nType").value,
+    message: document.getElementById("nMessage").value.trim(),
+    targetUid: target === "all" ? null : target,
+    targetName: target === "all" ? "Todos" : (usersCache[target]?.name || usersCache[target]?.email || "—"),
+    createdAt: Date.now()
+  });
+
+  e.target.reset();
+  submitBtn.disabled = false;
+  loadNotifications();
+});
+
+async function loadNotifications() {
+  const snap = await get(ref(db, "notifications"));
+  const notifs = snap.exists() ? snap.val() : {};
+  const body = document.getElementById("notifsTableBody");
+  const entries = Object.entries(notifs).sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+
+  const TYPE_LABELS = { resgate: "Resgate", plano: "Plano", prazo: "Prazo", aviso: "Instrução" };
+
+  if (entries.length === 0) {
+    body.innerHTML = `<tr><td colspan="5">Nenhum aviso enviado ainda.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = entries.map(([id, n]) => `
+    <tr>
+      <td>${escapeHtml(n.title || "—")}</td>
+      <td>${TYPE_LABELS[n.type] || "—"}</td>
+      <td>${escapeHtml(n.targetName || "Todos")}</td>
+      <td>${n.createdAt ? new Date(n.createdAt).toLocaleDateString("pt-BR") : "—"}</td>
+      <td><button class="btn-mini danger" data-action="delete-notif" data-id="${id}">Excluir</button></td>
+    </tr>
+  `).join("");
+
+  body.querySelectorAll("button[data-action='delete-notif']").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Excluir este aviso?")) return;
+      await remove(ref(db, `notifications/${btn.dataset.id}`));
+      loadNotifications();
     });
   });
 }
