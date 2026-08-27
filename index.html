@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLelite - Início</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Alerta Fixo -->
+  <div class="alert-banner">
+    ⚠️ Sorteios: Quem foi patrocinado e quem não foi participará do sorteio, desde que tenha entrado pelo nosso link oficial.
+  </div>
+
+  <!-- Cabeçalho -->
+  <header>
+    <a href="index.html" class="logo">PLelite</a>
+    <nav id="nav-menu">
+      <!-- Injetado via JS dependendo do status de login -->
+      <a href="login.html" class="btn-primary" id="btn-login">Entrar</a>
+      <button class="btn-primary" id="btn-vip" style="display: none;">Área VIP</button>
+      <button class="btn-secondary" id="btn-logout" style="display: none;">Sair</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Área de Transparência -->
+    <section class="transparency-section">
+      <div>
+        Total pago em patrocínios:
+        <span id="total-patrocinios">R$ 0,00</span>
+      </div>
+      <div>
+        Arrecadado para sorteios:
+        <span id="total-sorteios">R$ 0,00</span>
+      </div>
+    </section>
+
+    <!-- Feed de Postagens -->
+    <div id="feed">
+      <!-- Os cards serão injetados aqui pelo script.js -->
+    </div>
+  </main>
+
+  <!-- Botão Flutuante do WhatsApp -->
+  <a href="https://chat.whatsapp.com/EWHtx2C2kGXERf4ZpMyXvS?s=cl&p=a&mlu=4" target="_blank" class="whatsapp-float">
+    📱
+  </a>
+
+  <!-- Firebase e Scripts da Aplicação -->
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
