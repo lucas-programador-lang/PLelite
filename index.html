@@ -3,30 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PLelite - Início</title>
+  <meta name="description" content="PLelite — plataforma de patrocínios e sorteios com transparência total nos valores arrecadados.">
+  <meta name="theme-color" content="#08070a">
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="style.css">
+  <title>PLelite - Início</title>
 </head>
 <body>
 
-  <!-- Alerta Fixo -->
-  <div class="alert-banner">
-    ⚠️ Sorteios: Quem foi patrocinado e quem não foi participará do sorteio, desde que tenha entrado pelo nosso link oficial.
+  <!-- ===== Alerta Fixo ===== -->
+  <div class="alert-banner" role="alert">
+    ⚠️ Sorteios: quem foi patrocinado e quem não foi participará do sorteio, desde que tenha entrado pelo nosso link oficial.
   </div>
 
-  <!-- Cabeçalho -->
+  <!-- ===== Cabeçalho ===== -->
   <header>
     <a href="index.html" class="logo">PLelite</a>
-    <nav id="nav-menu">
-      <!-- Injetado via JS dependendo do status de login -->
+
+    <!-- Conteúdo alternado via JS conforme status de login -->
+    <nav id="nav-menu" aria-label="Navegação principal">
       <a href="login.html" class="btn-primary" id="btn-login">Entrar</a>
-      <button class="btn-primary" id="btn-vip" style="display: none;">Área VIP</button>
-      <button class="btn-secondary" id="btn-logout" style="display: none;">Sair</button>
+      <button type="button" class="btn-primary" id="btn-vip" style="display: none;">Área VIP</button>
+      <button type="button" class="btn-secondary" id="btn-logout" style="display: none;">Sair</button>
     </nav>
   </header>
 
   <main>
-    <!-- Área de Transparência -->
-    <section class="transparency-section">
+    <!-- ===== Área de Transparência ===== -->
+    <section class="transparency-section" aria-label="Transparência de valores">
       <div>
         Total pago em patrocínios:
         <span id="total-patrocinios">R$ 0,00</span>
@@ -37,18 +41,24 @@
       </div>
     </section>
 
-    <!-- Feed de Postagens -->
-    <div id="feed">
-      <!-- Os cards serão injetados aqui pelo script.js -->
-    </div>
+    <!-- ===== Feed de Postagens ===== -->
+    <!-- Cards injetados dinamicamente por script.js -->
+    <section id="feed" aria-label="Feed de postagens" aria-live="polite">
+    </section>
   </main>
 
-  <!-- Botão Flutuante do WhatsApp -->
-  <a href="https://chat.whatsapp.com/EWHtx2C2kGXERf4ZpMyXvS?s=cl&p=a&mlu=4" target="_blank" class="whatsapp-float">
-    📱
+  <!-- ===== Botão Flutuante do WhatsApp ===== -->
+  <a
+    href="https://chat.whatsapp.com/EWHtx2C2kGXERf4ZpMyXvS?s=cl&p=a&mlu=4"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="whatsapp-float"
+    aria-label="Entrar no grupo do WhatsApp"
+  >
+    <span aria-hidden="true">📱</span>
   </a>
 
-  <!-- Firebase e Scripts da Aplicação -->
+  <!-- ===== Firebase e Scripts da Aplicação ===== -->
   <script type="module" src="auth.js"></script>
   <script type="module" src="script.js"></script>
 </body>
