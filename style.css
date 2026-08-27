@@ -924,7 +924,7 @@ button, input { font-family: inherit; }
 }
 
 .notif-panel {
-  position: absolute;
+  position: fixed;
   top: 64px;
   right: 24px;
   width: 340px;
