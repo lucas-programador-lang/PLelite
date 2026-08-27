@@ -3,113 +3,156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PLelite - Painel Admin</title>
+  <title>PLelite - Painel Administrativo</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .admin-grid { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
-    .sidebar { background-color: var(--navy-900); padding: 2rem; border-right: 2px solid var(--gold-primary); }
-    .sidebar button { display: block; width: 100%; margin-bottom: 1rem; text-align: left; }
-    .admin-content { padding: 2rem; }
-    .panel { display: none; background: var(--bg-card); padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color); }
-    .panel.active { display: block; }
+    .admin-container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+    .admin-section { background: linear-gradient(160deg, #1c1a14 0%, #100e0a 100%); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem; }
+    .admin-section h3 { color: var(--gold-primary); margin-bottom: 1rem; }
   </style>
 </head>
 <body>
-  <div class="admin-grid">
-    <aside class="sidebar">
-      <h2 style="color: var(--gold-primary); margin-bottom: 2rem;">Admin PLelite</h2>
-      <button class="btn-secondary" onclick="showPanel('panel-posts')">Nova Postagem</button>
-      <button class="btn-secondary" onclick="showPanel('panel-users')">Gestão de Usuários</button>
-      <button class="btn-secondary" onclick="showPanel('panel-sponsors')">Patrocínios</button>
-      <button class="btn-secondary" onclick="showPanel('panel-finance')">Financeiro</button>
-      <button class="btn-secondary" onclick="showPanel('panel-audit')">Auditoria (Prints)</button>
-    </aside>
-    
-    <main class="admin-content">
-      <!-- Painel de Postagens -->
-      <div id="panel-posts" class="panel active">
-        <h2>Criar Postagem</h2>
-        <form id="form-post">
-          <div class="form-group">
-            <label>Título</label>
-            <input type="text" id="post-titulo" required>
-          </div>
-          <div class="form-group">
-            <label>URL da Imagem</label>
-            <input type="url" id="post-foto" required>
-          </div>
-          <div class="form-group">
-            <label>Categoria</label>
-            <input type="text" id="post-categoria" required>
-          </div>
-          <div class="form-group">
-            <label>Formato</label>
-            <select id="post-formato" style="width:100%; padding:0.75rem; background:var(--navy-900); color:white; border-radius:4px;">
-              <option value="1">Link Direto</option>
-              <option value="2">Botão de WhatsApp</option>
-            </select>
-          </div>
-          <div class="form-group" id="div-link">
-            <label>Link Direto</label>
-            <input type="url" id="post-link">
-          </div>
-          <button type="submit" class="btn-primary">Publicar Post</button>
-        </form>
-      </div>
+  <header>
+    <a href="index.html" class="logo">PLelite — Admin</a>
+    <nav id="nav-menu">
+      <a href="index.html" class="btn-secondary">Ir para o site</a>
+    </nav>
+  </header>
 
-      <!-- Painel de Patrocínios -->
-      <div id="panel-sponsors" class="panel">
-        <h2>Criar Vaga de Patrocínio</h2>
-        <form id="form-sponsor">
-          <div class="form-group">
-            <label>Nome da Plataforma/Projeto</label>
-            <input type="text" id="sponsor-projeto" required>
-          </div>
-          <div class="form-group">
-            <label>Quando Sacar (Regra)</label>
-            <input type="text" id="sponsor-sacar" required>
-          </div>
-          <div class="form-group">
-            <label>Quanto Devolver</label>
-            <input type="text" id="sponsor-devolver" required>
-          </div>
-          <button type="submit" class="btn-primary">Criar Patrocínio (Lim. 3 vagas)</button>
-        </form>
-        <hr style="margin: 2rem 0; border-color: var(--border-color);">
-        <h3>Burlar Limite de Vagas</h3>
-        <div class="form-group">
-          <label>ID do Patrocínio</label>
-          <input type="text" id="override-id">
-        </div>
-        <div class="form-group">
-          <label>Novo Limite</label>
-          <input type="number" id="override-limit">
-        </div>
-        <button id="btn-override" class="btn-secondary">Abrir Exceção</button>
-      </div>
+  <main class="admin-container" id="admin-panel" style="display: none;">
+    <h2 style="font-family: var(--font-display); background: var(--gold-gradient-text); -webkit-background-clip: text; -background-clip: text; color: transparent; margin-bottom: 1.5rem;">Painel de Controle do Administrador</h2>
 
-      <!-- Painel Financeiro -->
-      <div id="panel-finance" class="panel">
-        <h2>Atualizar Financeiro</h2>
-        <div class="form-group">
-          <label>Valor arrecadado para sorteio (R$)</label>
-          <input type="text" id="fin-sorteio">
+    <!-- Seção 1: Atualizar Caixa Financeiro -->
+    <section class="admin-section">
+      <h3>Transparência de Caixa Global</h3>
+      <form id="finance-form" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <div class="form-group" style="flex: 1; min-width: 200px;">
+          <label>Total Pago em Patrocínios (R$)</label>
+          <input type="text" id="val-patrocinios" placeholder="0.00">
         </div>
-        <div class="form-group">
-          <label>Valor investido em patrocínio (R$)</label>
-          <input type="text" id="fin-patrocinio">
+        <div class="form-group" style="flex: 1; min-width: 200px;">
+          <label>Arrecadado para Sorteios (R$)</label>
+          <input type="text" id="val-sorteios" placeholder="0.00">
         </div>
-        <button id="btn-finance" class="btn-primary">Salvar Valores</button>
+        <div style="align-self: flex-end; margin-bottom: 1.25rem;">
+          <button type="submit" class="btn-primary">Atualizar Valores</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Seção 2: Aprovação de Membros VIP -->
+    <section class="admin-section">
+      <h3>Liberação de Usuários (Acesso VIP)</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>WhatsApp</th>
+              <th>E-mail</th>
+              <th>Status VIP</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <!-- Injetado via JS -->
+          </tbody>
+        </table>
       </div>
-    </main>
+    </section>
+  </main>
+
+  <div id="unauthorized-screen" style="text-align: center; padding: 5rem 1rem; display: none;">
+    <h2 style="color: #e05252;">Acesso Negado</h2>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">Esta área é restrita para o administrador do PLelite.</p>
   </div>
 
-  <script src="admin.js"></script>
-  <script>
-    function showPanel(panelId) {
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById(panelId).classList.add('active');
+  <script type="module">
+    import { auth, db } from "./firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { ref, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const WORKER_URL = "https://api.compartilhar-projetos.com.br"; // Substitua pelo link do seu Worker se necessário
+
+    const adminPanel = document.getElementById('admin-panel');
+    const unauthorizedScreen = document.getElementById('unauthorized-screen');
+    const usersTableBody = document.getElementById('users-table-body');
+    const financeForm = document.getElementById('finance-form');
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        unauthorizedScreen.style.display = 'block';
+        return;
+      }
+
+      const snap = await get(ref(db, `users/${user.uid}/role`));
+      if (snap.exists() && snap.val() === 'admin') {
+        adminPanel.style.display = 'block';
+        carregarUsuariosAdmin();
+      } else {
+        unauthorizedScreen.style.display = 'block';
+      }
+    });
+
+    function carregarUsuariosAdmin() {
+      const usersRef = ref(db, 'users');
+      onValue(usersRef, (snapshot) => {
+        const users = snapshot.val() || {};
+        let html = '';
+
+        Object.entries(users).forEach(([uid, u]) => {
+          html += `
+            <tr>
+              <td>${u.nome || 'Sem nome'}</td>
+              <td>${u.whatsapp || '—'}</td>
+              <td>${u.email || '—'}</td>
+              <td><span style="color: ${u.isVIP ? '#25d366' : '#a1a1aa'}">${u.isVIP ? 'Liberado (VIP)' : 'Comum'}</span></td>
+              <td>
+                <button onclick="toggleVip('${uid}', ${!u.isVIP})" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                  ${u.isVIP ? 'Remover VIP' : 'Aprovar VIP'}
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+
+        usersTableBody.innerHTML = html;
+      });
     }
+
+    window.toggleVip = async function(targetUserId, novaSituacao) {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(`https://SEU-WORKER.workers.dev/admin/toggle-vip`, { // Ajuste para a URL do seu worker
+          method: 'POST',
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ targetUserId, isVIP: novaSituacao })
+        });
+        if (res.ok) alert('Status VIP atualizado com sucesso!');
+        else alert('Erro ao alterar permissão.');
+      } catch (err) {
+        console.error(err);
+        alert('Falha na comunicação com o servidor.');
+      }
+    }
+
+    financeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const totalPatrocinios = document.getElementById('val-patrocinios').value;
+      const totalSorteios = document.getElementById('val-sorteios').value;
+
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(`https://SEU-WORKER.workers.dev/admin/update-finance`, {
+          method: 'POST',
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ totalPatrocinios, totalSorteios })
+        });
+        if (res.ok) alert('Valores de caixa atualizados!');
+      } catch (err) {
+        alert('Erro ao atualizar caixa.');
+      }
+    });
   </script>
 </body>
 </html>
