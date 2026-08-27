@@ -106,8 +106,12 @@
   <a href="#main-content" class="skip-link">Pular para o conteúdo</a>
 
   <!-- ===== Alerta Fixo ===== -->
-  <div class="alert-banner" role="alert">
-    ⚠️ Sorteios: quem foi patrocinado e quem não foi participará do sorteio, desde que tenha entrado pelo nosso link oficial.
+  <div class="alert-banner" id="alert-banner" role="alert">
+    <div class="alert-banner-content">
+      <i class="alert-banner-icon" aria-hidden="true">⚠️</i>
+      <span>Sorteios: quem foi patrocinado e quem não foi participará do sorteio, desde que tenha entrado pelo nosso link oficial.</span>
+    </div>
+    <button type="button" class="alert-banner-close" id="alert-banner-close" aria-label="Fechar aviso">&times;</button>
   </div>
 
   <!-- ===== Cabeçalho ===== -->
@@ -224,6 +228,22 @@
 
   <script>
     document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    (function () {
+      var banner = document.getElementById('alert-banner');
+      var closeBtn = document.getElementById('alert-banner-close');
+      if (!banner || !closeBtn) return;
+
+      var today = new Date().toDateString();
+      if (localStorage.getItem('plelite-banner-dismissed') === today) {
+        banner.classList.add('is-hidden');
+      }
+
+      closeBtn.addEventListener('click', function () {
+        banner.classList.add('is-hidden');
+        localStorage.setItem('plelite-banner-dismissed', today);
+      });
+    })();
   </script>
 
   <!-- ===== Firebase e Scripts da Aplicação ===== -->
