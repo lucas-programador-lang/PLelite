@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLelite - Painel Admin</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-grid { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+    .sidebar { background-color: var(--navy-900); padding: 2rem; border-right: 2px solid var(--gold-primary); }
+    .sidebar button { display: block; width: 100%; margin-bottom: 1rem; text-align: left; }
+    .admin-content { padding: 2rem; }
+    .panel { display: none; background: var(--bg-card); padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color); }
+    .panel.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="admin-grid">
+    <aside class="sidebar">
+      <h2 style="color: var(--gold-primary); margin-bottom: 2rem;">Admin PLelite</h2>
+      <button class="btn-secondary" onclick="showPanel('panel-posts')">Nova Postagem</button>
+      <button class="btn-secondary" onclick="showPanel('panel-users')">Gestão de Usuários</button>
+      <button class="btn-secondary" onclick="showPanel('panel-sponsors')">Patrocínios</button>
+      <button class="btn-secondary" onclick="showPanel('panel-finance')">Financeiro</button>
+      <button class="btn-secondary" onclick="showPanel('panel-audit')">Auditoria (Prints)</button>
+    </aside>
+    
+    <main class="admin-content">
+      <!-- Painel de Postagens -->
+      <div id="panel-posts" class="panel active">
+        <h2>Criar Postagem</h2>
+        <form id="form-post">
+          <div class="form-group">
+            <label>Título</label>
+            <input type="text" id="post-titulo" required>
+          </div>
+          <div class="form-group">
+            <label>URL da Imagem</label>
+            <input type="url" id="post-foto" required>
+          </div>
+          <div class="form-group">
+            <label>Categoria</label>
+            <input type="text" id="post-categoria" required>
+          </div>
+          <div class="form-group">
+            <label>Formato</label>
+            <select id="post-formato" style="width:100%; padding:0.75rem; background:var(--navy-900); color:white; border-radius:4px;">
+              <option value="1">Link Direto</option>
+              <option value="2">Botão de WhatsApp</option>
+            </select>
+          </div>
+          <div class="form-group" id="div-link">
+            <label>Link Direto</label>
+            <input type="url" id="post-link">
+          </div>
+          <button type="submit" class="btn-primary">Publicar Post</button>
+        </form>
+      </div>
+
+      <!-- Painel de Patrocínios -->
+      <div id="panel-sponsors" class="panel">
+        <h2>Criar Vaga de Patrocínio</h2>
+        <form id="form-sponsor">
+          <div class="form-group">
+            <label>Nome da Plataforma/Projeto</label>
+            <input type="text" id="sponsor-projeto" required>
+          </div>
+          <div class="form-group">
+            <label>Quando Sacar (Regra)</label>
+            <input type="text" id="sponsor-sacar" required>
+          </div>
+          <div class="form-group">
+            <label>Quanto Devolver</label>
+            <input type="text" id="sponsor-devolver" required>
+          </div>
+          <button type="submit" class="btn-primary">Criar Patrocínio (Lim. 3 vagas)</button>
+        </form>
+        <hr style="margin: 2rem 0; border-color: var(--border-color);">
+        <h3>Burlar Limite de Vagas</h3>
+        <div class="form-group">
+          <label>ID do Patrocínio</label>
+          <input type="text" id="override-id">
+        </div>
+        <div class="form-group">
+          <label>Novo Limite</label>
+          <input type="number" id="override-limit">
+        </div>
+        <button id="btn-override" class="btn-secondary">Abrir Exceção</button>
+      </div>
+
+      <!-- Painel Financeiro -->
+      <div id="panel-finance" class="panel">
+        <h2>Atualizar Financeiro</h2>
+        <div class="form-group">
+          <label>Valor arrecadado para sorteio (R$)</label>
+          <input type="text" id="fin-sorteio">
+        </div>
+        <div class="form-group">
+          <label>Valor investido em patrocínio (R$)</label>
+          <input type="text" id="fin-patrocinio">
+        </div>
+        <button id="btn-finance" class="btn-primary">Salvar Valores</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="admin.js"></script>
+  <script>
+    function showPanel(panelId) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(panelId).classList.add('active');
+    }
+  </script>
+</body>
+</html>
