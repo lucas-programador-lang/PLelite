@@ -33,6 +33,25 @@
     .admin-msg.erro { color: var(--danger); }
     .admin-msg.ok { color: var(--success); }
 
+    .submit-print-form { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color); }
+    .submit-print-form .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .submit-print-form .form-row .form-group { flex: 1; min-width: 140px; }
+
+    .aviso-saque {
+      background: rgba(212, 175, 55, 0.08);
+      border: 1px solid var(--border-highlight);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--gold-100);
+      line-height: 1.5;
+    }
+
+    .comprovante-admin { margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color); }
+    .comprovante-admin .admin-inline-form input[type="date"],
+    .comprovante-admin .admin-inline-form input[type="number"] { flex: 0 0 auto; width: auto; }
+
     #new-sponsorship-form .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
     #new-sponsorship-form .form-row .form-group { flex: 1; min-width: 140px; }
   </style>
@@ -112,11 +131,14 @@
   </main>
 
   <script type="module">
-    import { auth, db } from "./firebase-init.js";
+    import { auth, db, storage } from "./firebase-init.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import {
       ref, get, push, set, update, onValue, runTransaction
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import {
+      ref as storageRef, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
     const vipContent = document.getElementById('vip-content');
     const lockedContent = document.getElementById('locked-content');
@@ -201,7 +223,8 @@
         const extras = item.vagasExtras || {};
         const limite = item.vagasLimite || 3;
         const count = Object.keys(participantes).length;
-        const jaParticipa = !!participantes[currentUid];
+        const meuParticipante = participantes[currentUid];
+        const jaParticipa = !!meuParticipante;
         const temExtra = !!extras[currentUid] && !jaParticipa;
         const encerrado = item.status === 'encerrado';
         const vagaLivre = count < limite || temExtra;
@@ -211,15 +234,15 @@
         else if (vagaLivre) statusBadge = '<span class="vaga-badge aberta">Vaga aberta</span>';
         else statusBadge = '<span class="vaga-badge lotada">Lotado</span>';
 
-        let botao;
-        if (encerrado) {
-          botao = `<button type="button" class="btn-secondary" disabled>Patrocínio encerrado</button>`;
+        let corpo;
+        if (encerrado && !jaParticipa) {
+          corpo = `<button type="button" class="btn-secondary" disabled>Patrocínio encerrado</button>`;
         } else if (jaParticipa) {
-          botao = `<button type="button" class="btn-secondary" disabled>Você já está nesta vaga ✓</button>`;
+          corpo = renderizarMinhaVaga(id, meuParticipante);
         } else if (vagaLivre) {
-          botao = `<button type="button" class="btn-primary" data-acao="pegar-vaga" data-id="${id}">${temExtra ? 'Pegar vaga (autorizada)' : 'Pegar vaga'}</button>`;
+          corpo = `<button type="button" class="btn-primary" data-acao="pegar-vaga" data-id="${id}">${temExtra ? 'Pegar vaga (autorizada)' : 'Pegar vaga'}</button>`;
         } else {
-          botao = `<button type="button" class="btn-secondary" disabled>Vagas esgotadas — aguarde autorização</button>`;
+          corpo = `<button type="button" class="btn-secondary" disabled>Vagas esgotadas — aguarde autorização</button>`;
         }
 
         return `
@@ -227,11 +250,113 @@
             <h4>${escapeHtml(item.titulo || 'Patrocínio')}${statusBadge}</h4>
             <p class="vaga-meta">${escapeHtml(item.instrucoes || 'Sem instruções adicionais.')}</p>
             <p class="vaga-meta">Vagas preenchidas: <strong>${count}/${limite}</strong>${Object.keys(extras).length ? ` · ${Object.keys(extras).length} autorização(ões) extra pendente(s)` : ''}</p>
-            ${botao}
+            ${corpo}
           </div>
         `;
       }).join('');
     }
+
+    // Renderiza a área da vaga que já pertence ao usuário logado:
+    // formulário de envio do print (se ainda não enviou) ou o resumo
+    // + aviso de saque (se já enviou).
+    function renderizarMinhaVaga(id, p) {
+      if (!p.printUrl) {
+        return `
+          <form class="submit-print-form" data-acao="enviar-print" data-id="${id}">
+            <div class="form-group">
+              <label>Qual máquina você vai investir</label>
+              <input type="text" name="maquina" placeholder="Ex: Máquina 2" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Data de contratação</label>
+                <input type="date" name="dataContratacao" required>
+              </div>
+              <div class="form-group">
+                <label>Previsão de finalização</label>
+                <input type="date" name="dataFinalizacao" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Print da contratação (imagem)</label>
+              <input type="file" name="print" accept="image/*" required>
+            </div>
+            <div class="admin-msg" data-msg-envio="${id}"></div>
+            <button type="submit" class="btn-primary">Enviar comprovante</button>
+          </form>
+        `;
+      }
+
+      const aviso = p.avisoSaque
+        ? `
+          <div class="aviso-saque">
+            ⚠️ <strong>Aviso de saque:</strong> sacar em ${formatarData(p.avisoSaque.dataSaque)} — devolver R$ ${formatarValor(p.avisoSaque.valorDevolver)}.
+            ${p.avisoSaque.mensagem ? `<br>${escapeHtml(p.avisoSaque.mensagem)}` : ''}
+          </div>
+        `
+        : `<p class="vaga-meta">Aguardando aviso de saque do administrador.</p>`;
+
+      return `
+        <p class="vaga-meta">Você já está nesta vaga ✓ — máquina: <strong>${escapeHtml(p.maquinaInvestida || '—')}</strong></p>
+        <p class="vaga-meta">Contratado em ${formatarData(p.dataContratacao)} · previsão de finalização em ${formatarData(p.dataFinalizacao)}</p>
+        <p class="vaga-meta"><a href="${p.printUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--gold-primary);">Ver print enviado</a></p>
+        ${aviso}
+      `;
+    }
+
+    // -----------------------------------------------------
+    // AÇÃO: enviar print + datas (upload no Firebase Storage)
+    // -----------------------------------------------------
+    vagasListEl.addEventListener('submit', async (e) => {
+      const form = e.target.closest('[data-acao="enviar-print"]');
+      if (!form) return;
+      e.preventDefault();
+
+      const id = form.dataset.id;
+      const msgEl = form.querySelector('[data-msg-envio]');
+      const maquina = form.querySelector('[name="maquina"]').value.trim();
+      const dataContratacao = form.querySelector('[name="dataContratacao"]').value;
+      const dataFinalizacao = form.querySelector('[name="dataFinalizacao"]').value;
+      const arquivo = form.querySelector('[name="print"]').files[0];
+      const btn = form.querySelector('button[type="submit"]');
+
+      if (msgEl) { msgEl.textContent = ''; msgEl.className = 'admin-msg'; }
+
+      if (!maquina || !dataContratacao || !dataFinalizacao || !arquivo) {
+        if (msgEl) {
+          msgEl.textContent = 'Preencha todos os campos e selecione o print.';
+          msgEl.classList.add('erro');
+        }
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      try {
+        const caminho = `prints/${id}/${currentUid}/${Date.now()}_${arquivo.name}`;
+        const fileRef = storageRef(storage, caminho);
+        await uploadBytes(fileRef, arquivo);
+        const url = await getDownloadURL(fileRef);
+
+        await update(ref(db, `sponsorships/${id}/participantes/${currentUid}`), {
+          maquinaInvestida: maquina,
+          dataContratacao,
+          dataFinalizacao,
+          printUrl: url,
+          printEnviadoEm: Date.now()
+        });
+        // A lista é re-renderizada automaticamente pelo onValue.
+      } catch (error) {
+        console.error('Erro ao enviar comprovante:', error);
+        if (msgEl) {
+          msgEl.textContent = 'Erro ao enviar. Tente novamente.';
+          msgEl.classList.add('erro');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Enviar comprovante';
+      }
+    });
 
     // -----------------------------------------------------
     // AÇÃO: pegar vaga (transação atômica evita duas pessoas
@@ -373,6 +498,29 @@
         const count = Object.keys(participantes).length;
         const status = item.status || 'aberto';
 
+        const comprovantesHtml = Object.entries(participantes)
+          .filter(([, p]) => p.printUrl)
+          .map(([uid, p]) => {
+            const key = `${id}:${uid}`;
+            const aviso = p.avisoSaque || {};
+            return `
+              <div class="comprovante-admin">
+                <p class="vaga-meta">
+                  <strong>${escapeHtml(p.nomeUsuario || uid)}</strong> — máquina: ${escapeHtml(p.maquinaInvestida || '—')}
+                  · contratado em ${formatarData(p.dataContratacao)} · finaliza em ${formatarData(p.dataFinalizacao)}
+                  · <a href="${p.printUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--gold-primary);">ver print</a>
+                </p>
+                <div class="admin-inline-form">
+                  <input type="date" data-aviso-data="${key}" value="${aviso.dataSaque || ''}">
+                  <input type="number" step="0.01" min="0" placeholder="Valor a devolver (R$)" data-aviso-valor="${key}" value="${aviso.valorDevolver ?? ''}">
+                  <input type="text" placeholder="Mensagem (opcional)" data-aviso-msg="${key}" value="${escapeAttr(aviso.mensagem || '')}">
+                  <button type="button" class="btn-secondary" data-acao="salvar-aviso" data-id="${id}" data-uid="${uid}">Salvar aviso de saque</button>
+                </div>
+                <div class="admin-msg" id="aviso-msg-${id}-${uid}"></div>
+              </div>
+            `;
+          }).join('');
+
         return `
           <div class="vaga-item">
             <h4>${escapeHtml(item.titulo || 'Patrocínio')}</h4>
@@ -393,6 +541,8 @@
               <button type="button" class="btn-secondary" data-acao="autorizar-extra" data-id="${id}">Autorizar vaga extra</button>
             </div>
             <div class="admin-msg" id="admin-msg-${id}"></div>
+
+            ${comprovantesHtml || '<p class="vaga-meta" style="margin-top: 1rem;">Nenhum comprovante enviado ainda.</p>'}
           </div>
         `;
       }).join('');
@@ -449,6 +599,46 @@
       }
     });
 
+    adminListEl.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-acao="salvar-aviso"]');
+      if (!btn) return;
+
+      const id = btn.dataset.id;
+      const uid = btn.dataset.uid;
+      const key = `${id}:${uid}`;
+      const msgEl = document.getElementById(`aviso-msg-${id}-${uid}`);
+      const dataSaque = adminListEl.querySelector(`[data-aviso-data="${key}"]`).value;
+      const valorInput = adminListEl.querySelector(`[data-aviso-valor="${key}"]`).value;
+      const mensagem = adminListEl.querySelector(`[data-aviso-msg="${key}"]`).value.trim();
+
+      if (msgEl) { msgEl.textContent = ''; msgEl.className = 'admin-msg'; }
+
+      const valorDevolver = parseFloat(valorInput);
+      if (!dataSaque || isNaN(valorDevolver) || valorDevolver < 0) {
+        if (msgEl) {
+          msgEl.textContent = 'Informe a data de saque e um valor válido.';
+          msgEl.classList.add('erro');
+        }
+        return;
+      }
+
+      try {
+        await update(ref(db, `sponsorships/${id}/participantes/${uid}`), {
+          avisoSaque: { dataSaque, valorDevolver, mensagem, definidoEm: Date.now() }
+        });
+        if (msgEl) {
+          msgEl.textContent = 'Aviso de saque salvo.';
+          msgEl.classList.add('ok');
+        }
+      } catch (error) {
+        console.error('Erro ao salvar aviso de saque:', error);
+        if (msgEl) {
+          msgEl.textContent = 'Erro ao salvar. Tente novamente.';
+          msgEl.classList.add('erro');
+        }
+      }
+    });
+
     // -----------------------------------------------------
     // UTIL
     // -----------------------------------------------------
@@ -456,6 +646,24 @@
       const div = document.createElement('div');
       div.textContent = str ?? '';
       return div.innerHTML;
+    }
+
+    function escapeAttr(str) {
+      return (str ?? '').replace(/"/g, '&quot;');
+    }
+
+    function formatarData(iso) {
+      if (!iso) return '—';
+      const partes = String(iso).split('-');
+      if (partes.length !== 3) return iso;
+      const [ano, mes, dia] = partes;
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    function formatarValor(valor) {
+      const numero = Number(valor);
+      if (isNaN(numero)) return '0,00';
+      return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
   </script>
 </body>
