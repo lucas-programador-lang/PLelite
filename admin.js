@@ -301,7 +301,7 @@ async function loadValidations() {
   const entries = Object.entries(validations);
 
   if (entries.length === 0) {
-    body.innerHTML = `<tr><td colspan="6">Nenhum comprovante enviado ainda.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7">Nenhum comprovante enviado ainda.</td></tr>`;
     return;
   }
 
@@ -318,6 +318,7 @@ async function loadValidations() {
         <td>${escapeHtml(v.campaignTitle || "—")}</td>
         <td>${formatDateRange(v.startDate, v.endDate)}</td>
         <td>${escapeHtml(v.notes || "—")}</td>
+        <td>${v.imageBase64 ? `<a href="${v.imageBase64}" target="_blank" rel="noopener">Ver print</a>` : "—"}</td>
         <td>${statusTag}</td>
         <td>
           <div class="row-actions">
