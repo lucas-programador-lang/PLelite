@@ -7,7 +7,7 @@
 
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { ref, get, push, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const userNameEl = document.getElementById("userName");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -40,6 +40,9 @@ const STATUS_CLASSES = {
   cancelada: "status-cancelada"
 };
 
+let currentUser = null;
+let currentUserName = "";
+
 /* ---------- Guarda de rota ---------- */
 
 logoutBtn.addEventListener("click", () => signOut(auth));
@@ -63,7 +66,9 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  userNameEl.textContent = userData.name || user.email;
+  currentUser = user;
+  currentUserName = userData.name || user.email;
+  userNameEl.textContent = currentUserName;
   show(dashboardContent);
   loadDashboard();
 });
@@ -126,6 +131,7 @@ function buildCampaignCard(c) {
   const filled = c.filledSlots || 0;
   const max = c.maxSlots || 3;
   const pct = Math.min(100, Math.round((filled / max) * 100));
+  const isActive = c.status === "ativa" || c.status === "andamento";
 
   const statusClass = STATUS_CLASSES[c.status] || "status-ativa";
   const statusLabel = STATUS_LABELS[c.status] || c.status;
@@ -156,9 +162,95 @@ function buildCampaignCard(c) {
     <div class="campaign-actions">
       <a class="btn-whatsapp" href="${whatsappHref}" target="_blank" rel="noopener">Participar via WhatsApp</a>
     </div>
+    ${isActive ? `<button type="button" class="btn-mini btn-block" data-action="send-proof" data-id="${c.id}" data-title="${escapeHtml(c.title || "")}">Enviar comprovante</button>` : ""}
   `;
 
   return card;
+}
+
+/* ---------- Modal: enviar comprovante ---------- */
+
+const proofModal = document.getElementById("proofModal");
+const proofForm = document.getElementById("proofForm");
+const proofCampaignTitle = document.getElementById("proofCampaignTitle");
+const proofFeedback = document.getElementById("proofFeedback");
+const proofCancel = document.getElementById("proofCancel");
+
+let proofCampaignId = null;
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action='send-proof']");
+  if (!btn) return;
+  proofCampaignId = btn.dataset.id;
+  proofCampaignTitle.textContent = btn.dataset.title;
+  hideProofFeedback();
+  proofForm.reset();
+  proofModal.classList.remove("is-hidden");
+});
+
+proofCancel.addEventListener("click", () => proofModal.classList.add("is-hidden"));
+
+proofForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideProofFeedback();
+
+  const submitBtn = document.getElementById("proofSubmit");
+  const fileInput = document.getElementById("proofFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    showProofFeedback("Selecione uma imagem do comprovante.");
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.classList.add("is-loading");
+
+  try {
+    const imageBase64 = await fileToBase64(file);
+
+    const newRef = push(ref(db, "validations"));
+    await set(newRef, {
+      userId: currentUser.uid,
+      userName: currentUserName,
+      campaignId: proofCampaignId,
+      campaignTitle: proofCampaignTitle.textContent,
+      startDate: document.getElementById("proofStart").value,
+      endDate: document.getElementById("proofEnd").value,
+      notes: document.getElementById("proofNotes").value.trim(),
+      imageBase64,
+      status: "pendente",
+      submittedAt: Date.now()
+    });
+
+    showProofFeedback("Comprovante enviado! Aguarde a validação do administrador.", "success");
+    setTimeout(() => proofModal.classList.add("is-hidden"), 1400);
+  } catch (err) {
+    showProofFeedback("Não foi possível enviar o comprovante. Tente novamente.");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove("is-loading");
+  }
+});
+
+function showProofFeedback(message, type = "error") {
+  proofFeedback.textContent = message;
+  proofFeedback.hidden = false;
+  proofFeedback.classList.toggle("is-success", type === "success");
+}
+
+function hideProofFeedback() {
+  proofFeedback.hidden = true;
+  proofFeedback.textContent = "";
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 /* ---------- Utilitários ---------- */
