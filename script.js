@@ -275,7 +275,7 @@ notifBell.addEventListener("click", () => {
 });
 
 document.addEventListener("click", (e) => {
-  if (!notifPanel.contains(e.target) && e.target !== notifBell && !notifPanel.classList.contains("is-hidden")) {
+  if (!notifPanel.contains(e.target) && !notifBell.contains(e.target) && !notifPanel.classList.contains("is-hidden")) {
     notifPanel.classList.add("is-hidden");
   }
 });
