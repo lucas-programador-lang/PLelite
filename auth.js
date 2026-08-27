@@ -5,24 +5,27 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   sendPasswordResetEmail,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getDatabase, 
   ref, 
-  set 
+  set,
+  get
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // SUAS CONFIGURAÇÕES DO FIREBASE AQUI
 const firebaseConfig = {
-  apiKey: "AIzaSyA6LJUVIThMhRl87W10-A-wKRneohDYrJU",
-  authDomain: "plelite.firebaseapp.com",
-  databaseURL: "https://plelite-default-rtdb.firebaseio.com",
-  projectId: "plelite",
-  storageBucket: "plelite.firebasestorage.app",
-  messagingSenderId: "561668288888",
-  appId: "1:561668288888:web:77c9406f54c8d32255188d"
+  apiKey: "SUA_API_KEY",
+  authDomain: "SEU_PROJETO.firebaseapp.com",
+  databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
+  projectId: "SEU_PROJETO",
+  storageBucket: "SEU_PROJETO.appspot.com",
+  messagingSenderId: "SEU_SENDER_ID",
+  appId: "SEU_APP_ID"
 };
+
 // Inicialização
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -128,6 +131,67 @@ if (loginForm) {
       exibirMensagem(traduzirErro(error.code));
       setBotaoCarregando(loginBtn, false, 'Entrar', 'Entrando...');
     }
+  });
+}
+
+// -----------------------------------------------------
+// ESTADO DE LOGIN (index.html e qualquer página com esses botões)
+// -----------------------------------------------------
+const btnLogin = document.getElementById('btn-login');
+const btnVip = document.getElementById('btn-vip');
+const btnLogout = document.getElementById('btn-logout');
+
+if (btnLogin || btnVip || btnLogout) {
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // Usuário logado: verifica o perfil no Realtime Database
+      let perfil = null;
+      try {
+        const snapshot = await get(ref(db, `users/${user.uid}`));
+        perfil = snapshot.exists() ? snapshot.val() : null;
+      } catch (error) {
+        console.error('Erro ao carregar perfil:', error);
+      }
+
+      // Conta suspensa: desconecta imediatamente
+      if (perfil && perfil.suspended) {
+        await signOut(auth);
+        exibirMensagem('Sua conta está suspensa. Entre em contato com o suporte.');
+        return;
+      }
+
+      if (btnLogin) btnLogin.style.display = 'none';
+      if (btnLogout) btnLogout.style.display = '';
+
+      if (btnVip) {
+        btnVip.style.display = '';
+        btnVip.textContent = perfil && perfil.isVIP ? 'Área VIP' : 'Seja VIP';
+      }
+
+    } else {
+      // Usuário deslogado
+      if (btnLogin) btnLogin.style.display = '';
+      if (btnVip) btnVip.style.display = 'none';
+      if (btnLogout) btnLogout.style.display = 'none';
+    }
+  });
+}
+
+if (btnLogout) {
+  btnLogout.addEventListener('click', async () => {
+    try {
+      await signOut(auth);
+      window.location.href = 'index.html';
+    } catch (error) {
+      exibirMensagem(traduzirErro(error.code));
+    }
+  });
+}
+
+if (btnVip) {
+  btnVip.addEventListener('click', () => {
+    // Ajuste o destino conforme a página/fluxo real da Área VIP.
+    window.location.href = 'vip.html';
   });
 }
 
