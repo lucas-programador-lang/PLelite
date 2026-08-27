@@ -1,158 +1,191 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PLelite - Painel Administrativo</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    .admin-container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
-    .admin-section { background: linear-gradient(160deg, #1c1a14 0%, #100e0a 100%); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem; }
-    .admin-section h3 { color: var(--gold-primary); margin-bottom: 1rem; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PL ELITE — Painel Administrativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <a href="index.html" class="logo">PLelite — Admin</a>
-    <nav id="nav-menu">
-      <a href="index.html" class="btn-secondary">Ir para o site</a>
-    </nav>
+
+<div class="app-shell">
+
+  <header class="app-header">
+    <div class="app-logo">PL<span>ELITE</span> <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);font-style:normal;">/ admin</span></div>
+    <div class="app-user">
+      <span class="app-user-name">Olá, <strong id="userName">—</strong></span>
+      <a class="btn-ghost" href="index.html" style="text-decoration:none;">Dashboard</a>
+      <button type="button" class="btn-ghost" id="logoutBtn">Sair</button>
+    </div>
   </header>
 
-  <main class="admin-container" id="admin-panel" style="display: none;">
-    <h2 style="font-family: var(--font-display); background: var(--gold-gradient-text); -webkit-background-clip: text; -background-clip: text; color: transparent; margin-bottom: 1.5rem;">Painel de Controle do Administrador</h2>
+  <main class="app-main">
 
-    <!-- Seção 1: Atualizar Caixa Financeiro -->
-    <section class="admin-section">
-      <h3>Transparência de Caixa Global</h3>
-      <form id="finance-form" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <div class="form-group" style="flex: 1; min-width: 200px;">
-          <label>Total Pago em Patrocínios (R$)</label>
-          <input type="text" id="val-patrocinios" placeholder="0.00">
-        </div>
-        <div class="form-group" style="flex: 1; min-width: 200px;">
-          <label>Arrecadado para Sorteios (R$)</label>
-          <input type="text" id="val-sorteios" placeholder="0.00">
-        </div>
-        <div style="align-self: flex-end; margin-bottom: 1.25rem;">
-          <button type="submit" class="btn-primary">Atualizar Valores</button>
-        </div>
-      </form>
-    </section>
+    <!-- Exibido se o usuário logado não for admin -->
+    <div class="gate-screen is-hidden" id="gateDenied">
+      <h2>Acesso restrito</h2>
+      <p>Esta área é exclusiva para administradores.</p>
+    </div>
 
-    <!-- Seção 2: Aprovação de Membros VIP -->
-    <section class="admin-section">
-      <h3>Liberação de Usuários (Acesso VIP)</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>WhatsApp</th>
-              <th>E-mail</th>
-              <th>Status VIP</th>
-              <th>Ação</th>
-            </tr>
-          </thead>
-          <tbody id="users-table-body">
-            <!-- Injetado via JS -->
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <div id="adminContent" class="is-hidden">
+
+      <nav class="admin-tabs" role="tablist">
+        <button type="button" class="admin-tab is-active" data-tab="overview">Visão geral</button>
+        <button type="button" class="admin-tab" data-tab="users">Usuários</button>
+        <button type="button" class="admin-tab" data-tab="campaigns">Campanhas</button>
+        <button type="button" class="admin-tab" data-tab="posts">Publicações</button>
+        <button type="button" class="admin-tab" data-tab="validations">Validações</button>
+        <button type="button" class="admin-tab" data-tab="raffle">Bonificação</button>
+      </nav>
+
+      <!-- VISÃO GERAL -->
+      <section class="admin-section is-active" id="tab-overview">
+        <section class="metrics-grid">
+          <div class="metric-card"><span class="metric-label">RECOMPENSAS DISTRIBUÍDAS</span><span class="metric-value" id="ovRewards">—</span></div>
+          <div class="metric-card"><span class="metric-label">FUNDO DE BONIFICAÇÃO</span><span class="metric-value" id="ovBonusFund">—</span></div>
+          <div class="metric-card"><span class="metric-label">USUÁRIOS ATIVOS</span><span class="metric-value" id="ovActiveUsers">—</span></div>
+          <div class="metric-card"><span class="metric-label">TAXA DE CONCLUSÃO</span><span class="metric-value" id="ovCompletionRate">—</span></div>
+        </section>
+      </section>
+
+      <!-- USUÁRIOS -->
+      <section class="admin-section" id="tab-users">
+        <div class="panel-block">
+          <h3>Gestão de usuários</h3>
+          <div class="toolbar">
+            <input type="search" id="userSearch" placeholder="Buscar por nome ou e-mail…">
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Nível</th><th>Ações</th></tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <tr><td colspan="5">Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- CAMPANHAS -->
+      <section class="admin-section" id="tab-campaigns">
+        <div class="panel-block">
+          <h3>Nova campanha</h3>
+          <form class="form-grid" id="campaignForm">
+            <div class="field"><label for="cTitle">Nome</label><input type="text" id="cTitle" required></div>
+            <div class="field"><label for="cPlan">Plano exigido</label><input type="text" id="cPlan" placeholder="ex: Bronze, Prata, Ouro"></div>
+            <div class="field field-full"><label for="cDesc">Descrição</label><textarea id="cDesc"></textarea></div>
+            <div class="field"><label for="cBudget">Orçamento (R$)</label><input type="number" id="cBudget" min="0" step="0.01"></div>
+            <div class="field"><label for="cMaxSlots">Limite de vagas</label><input type="number" id="cMaxSlots" min="1" value="3"></div>
+            <div class="field"><label for="cStart">Data de início</label><input type="date" id="cStart"></div>
+            <div class="field"><label for="cEnd">Data de término</label><input type="date" id="cEnd"></div>
+            <div class="field"><label for="cWhats">WhatsApp (só números, com DDI)</label><input type="text" id="cWhats" placeholder="5568999503477"></div>
+            <div class="field"><label for="cWhatsMsg">Mensagem pré-configurada</label><input type="text" id="cWhatsMsg" placeholder="vim pelo site"></div>
+            <div class="field field-full"><label for="cSubmit"></label>
+              <button type="submit" class="btn-primary btn-inline" id="campaignSubmit"><span class="btn-label">Criar campanha</span></button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-block">
+          <h3>Campanhas cadastradas</h3>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr><th>Campanha</th><th>Vagas</th><th>Status</th><th>Período</th><th>Ações</th></tr>
+              </thead>
+              <tbody id="campaignsTableBody">
+                <tr><td colspan="5">Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PUBLICAÇÕES -->
+      <section class="admin-section" id="tab-posts">
+        <div class="panel-block">
+          <h3>Nova publicação</h3>
+          <form class="form-grid" id="postForm">
+            <div class="field"><label for="pTitle">Título</label><input type="text" id="pTitle" required></div>
+            <div class="field">
+              <label for="pCategory">Categoria</label>
+              <select id="pCategory">
+                <option value="destaque">Campanhas em Destaque</option>
+                <option value="oportunidades">Oportunidades</option>
+                <option value="andamento">Em Andamento</option>
+                <option value="concluidas">Concluídas</option>
+              </select>
+            </div>
+            <div class="field field-full"><label for="pDesc">Descrição</label><textarea id="pDesc"></textarea></div>
+            <div class="field"><label for="pImage">URL da mídia (foto)</label><input type="text" id="pImage" placeholder="https://…"></div>
+            <div class="field"><label for="pLink">Link de redirecionamento</label><input type="text" id="pLink" placeholder="https://…"></div>
+            <div class="field field-full">
+              <button type="submit" class="btn-primary btn-inline" id="postSubmit"><span class="btn-label">Publicar</span></button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-block">
+          <h3>Publicações</h3>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Título</th><th>Categoria</th><th>Data</th><th>Ações</th></tr></thead>
+              <tbody id="postsTableBody"><tr><td colspan="4">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VALIDAÇÕES -->
+      <section class="admin-section" id="tab-validations">
+        <div class="panel-block">
+          <h3>Comprovantes enviados pelos usuários</h3>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Usuário</th><th>Campanha</th><th>Período</th><th>Observações</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="validationsTableBody"><tr><td colspan="6">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- BONIFICAÇÃO / SORTEIO -->
+      <section class="admin-section" id="tab-raffle">
+        <div class="panel-block">
+          <h3>Fundo de bonificação</h3>
+          <form class="form-grid" id="raffleForm">
+            <div class="field"><label for="rFund">Valor acumulado (R$)</label><input type="number" id="rFund" min="0" step="0.01"></div>
+            <div class="field"><label for="rDate">Data do sorteio</label><input type="date" id="rDate"></div>
+            <div class="field field-full"><label for="rRules">Regras de elegibilidade</label><textarea id="rRules" placeholder="ex: rastreamento de link de indicação válido"></textarea></div>
+            <div class="field field-full">
+              <button type="submit" class="btn-primary btn-inline" id="raffleSubmit"><span class="btn-label">Salvar</span></button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-block">
+          <h3>Usuários qualificados</h3>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Ações</th></tr></thead>
+              <tbody id="raffleTableBody"><tr><td colspan="3">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
   </main>
 
-  <div id="unauthorized-screen" style="text-align: center; padding: 5rem 1rem; display: none;">
-    <h2 style="color: #e05252;">Acesso Negado</h2>
-    <p style="color: var(--text-muted); margin-top: 0.5rem;">Esta área é restrita para o administrador do PLelite.</p>
-  </div>
+</div>
 
-  <script type="module">
-    import { auth, db } from "./firebase-init.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { ref, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-    const WORKER_URL = "https://api.compartilhar-projetos.com.br"; // Substitua pelo link do seu Worker se necessário
-
-    const adminPanel = document.getElementById('admin-panel');
-    const unauthorizedScreen = document.getElementById('unauthorized-screen');
-    const usersTableBody = document.getElementById('users-table-body');
-    const financeForm = document.getElementById('finance-form');
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        unauthorizedScreen.style.display = 'block';
-        return;
-      }
-
-      const snap = await get(ref(db, `users/${user.uid}/role`));
-      if (snap.exists() && snap.val() === 'admin') {
-        adminPanel.style.display = 'block';
-        carregarUsuariosAdmin();
-      } else {
-        unauthorizedScreen.style.display = 'block';
-      }
-    });
-
-    function carregarUsuariosAdmin() {
-      const usersRef = ref(db, 'users');
-      onValue(usersRef, (snapshot) => {
-        const users = snapshot.val() || {};
-        let html = '';
-
-        Object.entries(users).forEach(([uid, u]) => {
-          html += `
-            <tr>
-              <td>${u.nome || 'Sem nome'}</td>
-              <td>${u.whatsapp || '—'}</td>
-              <td>${u.email || '—'}</td>
-              <td><span style="color: ${u.isVIP ? '#25d366' : '#a1a1aa'}">${u.isVIP ? 'Liberado (VIP)' : 'Comum'}</span></td>
-              <td>
-                <button onclick="toggleVip('${uid}', ${!u.isVIP})" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                  ${u.isVIP ? 'Remover VIP' : 'Aprovar VIP'}
-                </button>
-              </td>
-            </tr>
-          `;
-        });
-
-        usersTableBody.innerHTML = html;
-      });
-    }
-
-    window.toggleVip = async function(targetUserId, novaSituacao) {
-      try {
-        const token = await auth.currentUser.getIdToken();
-        const res = await fetch(`https://SEU-WORKER.workers.dev/admin/toggle-vip`, { // Ajuste para a URL do seu worker
-          method: 'POST',
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ targetUserId, isVIP: novaSituacao })
-        });
-        if (res.ok) alert('Status VIP atualizado com sucesso!');
-        else alert('Erro ao alterar permissão.');
-      } catch (err) {
-        console.error(err);
-        alert('Falha na comunicação com o servidor.');
-      }
-    }
-
-    financeForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const totalPatrocinios = document.getElementById('val-patrocinios').value;
-      const totalSorteios = document.getElementById('val-sorteios').value;
-
-      try {
-        const token = await auth.currentUser.getIdToken();
-        const res = await fetch(`https://SEU-WORKER.workers.dev/admin/update-finance`, {
-          method: 'POST',
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ totalPatrocinios, totalSorteios })
-        });
-        if (res.ok) alert('Valores de caixa atualizados!');
-      } catch (err) {
-        alert('Erro ao atualizar caixa.');
-      }
-    });
-  </script>
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="admin.js"></script>
 </body>
 </html>
