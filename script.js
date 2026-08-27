@@ -71,6 +71,7 @@ onAuthStateChanged(auth, async (user) => {
   userNameEl.textContent = currentUserName;
   show(dashboardContent);
   loadDashboard();
+  loadNotifications();
 });
 
 function show(panel) {
@@ -251,6 +252,88 @@ function fileToBase64(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+/* ---------- Notificações ---------- */
+
+const notifBell = document.getElementById("notifBell");
+const notifBadge = document.getElementById("notifBadge");
+const notifPanel = document.getElementById("notifPanel");
+const notifList = document.getElementById("notifList");
+
+const NOTIF_TYPE_LABELS = {
+  resgate: "Resgate de recompensa",
+  plano: "Plano a utilizar",
+  prazo: "Prazo de entrega",
+  aviso: "Instrução do admin"
+};
+
+notifBell.addEventListener("click", () => {
+  const willOpen = notifPanel.classList.contains("is-hidden");
+  notifPanel.classList.toggle("is-hidden");
+  if (willOpen) markAllAsRead();
+});
+
+document.addEventListener("click", (e) => {
+  if (!notifPanel.contains(e.target) && e.target !== notifBell && !notifPanel.classList.contains("is-hidden")) {
+    notifPanel.classList.add("is-hidden");
+  }
+});
+
+async function loadNotifications() {
+  const snap = await get(ref(db, "notifications"));
+  const all = snap.exists() ? snap.val() : {};
+
+  const mine = Object.entries(all)
+    .filter(([, n]) => !n.targetUid || n.targetUid === currentUser.uid)
+    .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+
+  renderNotifications(mine);
+}
+
+function renderNotifications(entries) {
+  if (entries.length === 0) {
+    notifList.innerHTML = `<p class="notif-empty">Nenhum aviso por enquanto.</p>`;
+    updateBadge(0);
+    return;
+  }
+
+  const unreadCount = entries.filter(([, n]) => !(n.readBy && n.readBy[currentUser.uid])).length;
+  updateBadge(unreadCount);
+
+  notifList.innerHTML = entries.map(([id, n]) => {
+    const isUnread = !(n.readBy && n.readBy[currentUser.uid]);
+    const date = n.createdAt ? new Date(n.createdAt).toLocaleDateString("pt-BR") : "";
+    return `
+      <div class="notif-item ${isUnread ? "is-unread" : ""}">
+        <div class="notif-item-top">
+          <span class="notif-item-title">${escapeHtml(NOTIF_TYPE_LABELS[n.type] || "Aviso")}: ${escapeHtml(n.title || "")}</span>
+          <span class="notif-item-date">${date}</span>
+        </div>
+        <p class="notif-item-msg">${escapeHtml(n.message || "")}</p>
+      </div>`;
+  }).join("");
+
+  window.__notifEntries = entries;
+}
+
+function updateBadge(count) {
+  if (count > 0) {
+    notifBadge.textContent = count > 9 ? "9+" : count;
+    notifBadge.classList.remove("is-hidden");
+  } else {
+    notifBadge.classList.add("is-hidden");
+  }
+}
+
+async function markAllAsRead() {
+  const entries = window.__notifEntries || [];
+  const unread = entries.filter(([, n]) => !(n.readBy && n.readBy[currentUser.uid]));
+  if (unread.length === 0) return;
+
+  await Promise.all(unread.map(([id]) => set(ref(db, `notifications/${id}/readBy/${currentUser.uid}`), true)));
+  updateBadge(0);
+  document.querySelectorAll(".notif-item.is-unread").forEach((el) => el.classList.remove("is-unread"));
 }
 
 /* ---------- Utilitários ---------- */
