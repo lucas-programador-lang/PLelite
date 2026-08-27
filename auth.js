@@ -1,200 +1,197 @@
-// Importações do Firebase SDK v10 (Modular)
-import { auth, db } from "./firebase-init.js";
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
+// ===================================================================
+// PL ELITE — auth.js
+// Usado por login.html e register.html.
+// Contém a lógica do Firebase Auth + Realtime Database e também a
+// interação de UI de cada página (mostrar senha, alternar telas,
+// estados de carregamento e mensagens de retorno).
+// ===================================================================
+
+import { auth, db } from "./firebase-config.js";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   sendPasswordResetEmail,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { 
-  ref, 
-  set,
-  get
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  updateProfile
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  ref,
+  set
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// Tradução de Erros do Firebase para Português
-function traduzirErro(codigo) {
-  switch(codigo) {
-    case 'auth/email-already-in-use': return 'Este e-mail já está cadastrado.';
-    case 'auth/invalid-email': return 'E-mail inválido.';
-    case 'auth/weak-password': return 'A senha é muito fraca (mínimo de 6 caracteres).';
-    case 'auth/user-not-found': return 'Usuário não encontrado.';
-    case 'auth/wrong-password': return 'Senha incorreta.';
-    case 'auth/invalid-credential': return 'Credenciais inválidas.';
-    case 'auth/too-many-requests': return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
-    case 'auth/network-request-failed': return 'Falha de conexão. Verifique sua internet.';
-    default: return 'Ocorreu um erro. Tente novamente. (' + codigo + ')';
-  }
+/* ============================ FIREBASE ============================ */
+
+/**
+ * Cria a conta no Firebase Auth e grava o registro do usuário no
+ * Realtime Database em /users/{uid}, já seguindo o modelo RBAC do
+ * PL ELITE: role "user" e isAuthorized false até liberação do admin.
+ */
+async function registerUser({ name, email, password }) {
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
+
+  await updateProfile(credential.user, { displayName: name });
+
+  await set(ref(db, `users/${credential.user.uid}`), {
+    name,
+    email,
+    role: "user",
+    isAuthorized: false,
+    isBlocked: false,
+    createdAt: Date.now()
+  });
+
+  return credential.user;
 }
 
-// Mostra mensagem numa div #form-message, se ela existir na página.
-// Se não existir, cai no alert() como antes (compatibilidade com páginas antigas).
-function exibirMensagem(texto, isError = true) {
-  const el = document.getElementById('form-message');
-  if (el) {
-    el.textContent = texto;
-    el.style.color = isError ? '#e05252' : '#4caf50';
-  } else {
-    alert(texto);
-  }
+/** Autentica o usuário com e-mail e senha. */
+async function loginUser({ email, password }) {
+  const credential = await signInWithEmailAndPassword(auth, email, password);
+  return credential.user;
 }
 
-// Ativa/desativa o botão de submit com texto de carregamento.
-function setBotaoCarregando(btn, carregando, textoOriginal, textoCarregando) {
-  if (!btn) return;
-  btn.disabled = carregando;
-  btn.textContent = carregando ? textoCarregando : textoOriginal;
+/** Dispara o e-mail de redefinição de senha do Firebase. */
+async function resetPassword({ email }) {
+  await sendPasswordResetEmail(auth, email);
 }
 
-// -----------------------------------------------------
-// LÓGICA DE CADASTRO (register.html)
-// -----------------------------------------------------
-const registerForm = document.getElementById('register-form');
-if (registerForm) {
-  const submitBtn = document.getElementById('submit-btn');
+/** Traduz os códigos de erro do Firebase para mensagens em pt-BR. */
+function traduzErroFirebase(code) {
+  const mensagens = {
+    "auth/invalid-email": "E-mail inválido.",
+    "auth/user-disabled": "Esta conta foi desativada.",
+    "auth/user-not-found": "Não encontramos uma conta com este e-mail.",
+    "auth/wrong-password": "Senha incorreta.",
+    "auth/invalid-credential": "E-mail ou senha incorretos.",
+    "auth/email-already-in-use": "Este e-mail já está cadastrado.",
+    "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
+    "auth/too-many-requests": "Muitas tentativas. Aguarde um momento e tente novamente.",
+    "auth/network-request-failed": "Falha de conexão. Verifique sua internet."
+  };
+  return mensagens[code] || "Não foi possível concluir. Tente novamente.";
+}
 
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    exibirMensagem('', false);
+/* ============================== UI ============================== */
 
-    const nome = document.getElementById('nome').value.trim();
-    const whatsapp = document.getElementById('whatsapp').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
+const feedback = document.getElementById("formFeedback");
 
-    setBotaoCarregando(submitBtn, true, 'Cadastrar', 'Cadastrando...');
+function showFeedback(message, type = "error") {
+  if (!feedback) return;
+  feedback.textContent = message;
+  feedback.hidden = false;
+  feedback.classList.toggle("is-success", type === "success");
+}
 
+function hideFeedback() {
+  if (!feedback) return;
+  feedback.hidden = true;
+  feedback.textContent = "";
+}
+
+function setLoading(button, loading) {
+  button.disabled = loading;
+  button.classList.toggle("is-loading", loading);
+}
+
+// Mostrar / ocultar senha (presente em login e cadastro)
+document.querySelectorAll("[data-toggle-password]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const input = document.getElementById(btn.dataset.togglePassword);
+    const isHidden = input.type === "password";
+    input.type = isHidden ? "text" : "password";
+    btn.textContent = isHidden ? "Ocultar" : "Mostrar";
+  });
+});
+
+/* ---------- login.html ---------- */
+
+const viewLogin = document.getElementById("viewLogin");
+
+if (viewLogin) {
+  const panelLogin = document.getElementById("panelLogin");
+  const panelReset = document.getElementById("panelReset");
+  const goToReset = document.getElementById("goToReset");
+  const backToLogin = document.getElementById("backToLogin");
+  const viewReset = document.getElementById("viewReset");
+
+  goToReset.addEventListener("click", () => {
+    panelLogin.classList.add("is-hidden");
+    panelReset.classList.remove("is-hidden");
+    hideFeedback();
+  });
+
+  backToLogin.addEventListener("click", () => {
+    panelReset.classList.add("is-hidden");
+    panelLogin.classList.remove("is-hidden");
+    hideFeedback();
+  });
+
+  viewLogin.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    hideFeedback();
+
+    const submitBtn = document.getElementById("loginSubmit");
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    setLoading(submitBtn, true);
     try {
-      // 1. Cria o usuário no Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // 2. Salva o perfil no Realtime Database com as regras solicitadas
-      await set(ref(db, `users/${user.uid}`), {
-        nome: nome,
-        email: email,
-        whatsapp: whatsapp,
-        role: 'user', // Padrão
-        suspended: false,
-        isVIP: false  // Trava ativada, admin precisa alterar para true
-      });
-
-      exibirMensagem('Cadastro realizado com sucesso! Redirecionando...', false);
-      window.location.href = 'index.html';
-
-    } catch (error) {
-      exibirMensagem(traduzirErro(error.code));
-      setBotaoCarregando(submitBtn, false, 'Cadastrar', 'Cadastrando...');
+      await loginUser({ email, password });
+      showFeedback("Login realizado com sucesso. Redirecionando…", "success");
+      // window.location.href = "index.html";
+    } catch (err) {
+      showFeedback(traduzErroFirebase(err.code));
+    } finally {
+      setLoading(submitBtn, false);
     }
   });
-}
 
-// -----------------------------------------------------
-// LÓGICA DE LOGIN (login.html)
-// -----------------------------------------------------
-const loginForm = document.getElementById('login-form');
-if (loginForm) {
-  const loginBtn = loginForm.querySelector('button[type="submit"]');
+  viewReset.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    hideFeedback();
 
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    exibirMensagem('', false);
+    const submitBtn = document.getElementById("resetSubmit");
+    const email = document.getElementById("resetEmail").value.trim();
 
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-
-    setBotaoCarregando(loginBtn, true, 'Entrar', 'Entrando...');
-
+    setLoading(submitBtn, true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      window.location.href = 'index.html';
-    } catch (error) {
-      exibirMensagem(traduzirErro(error.code));
-      setBotaoCarregando(loginBtn, false, 'Entrar', 'Entrando...');
+      await resetPassword({ email });
+      showFeedback("Link de redefinição enviado para o seu e-mail.", "success");
+    } catch (err) {
+      showFeedback(traduzErroFirebase(err.code));
+    } finally {
+      setLoading(submitBtn, false);
     }
   });
 }
 
-// -----------------------------------------------------
-// ESTADO DE LOGIN (index.html e qualquer página com esses botões)
-// -----------------------------------------------------
-const btnLogin = document.getElementById('btn-login');
-const btnVip = document.getElementById('btn-vip');
-const btnLogout = document.getElementById('btn-logout');
+/* ---------- register.html ---------- */
 
-if (btnLogin || btnVip || btnLogout) {
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      // Usuário logado: verifica o perfil no Realtime Database
-      let perfil = null;
-      try {
-        const snapshot = await get(ref(db, `users/${user.uid}`));
-        perfil = snapshot.exists() ? snapshot.val() : null;
-      } catch (error) {
-        console.error('Erro ao carregar perfil:', error);
-      }
+const viewSignup = document.getElementById("viewSignup");
 
-      // Conta suspensa: desconecta imediatamente
-      if (perfil && perfil.suspended) {
-        await signOut(auth);
-        exibirMensagem('Sua conta está suspensa. Entre em contato com o suporte.');
-        return;
-      }
+if (viewSignup) {
+  viewSignup.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    hideFeedback();
 
-      if (btnLogin) btnLogin.style.display = 'none';
-      if (btnLogout) btnLogout.style.display = '';
+    const submitBtn = document.getElementById("signupSubmit");
+    const name = document.getElementById("signupName").value.trim();
+    const email = document.getElementById("signupEmail").value.trim();
+    const password = document.getElementById("signupPassword").value;
+    const passwordConfirm = document.getElementById("signupPasswordConfirm").value;
 
-      if (btnVip) {
-        btnVip.style.display = '';
-        btnVip.textContent = perfil && perfil.isVIP ? 'Área VIP' : 'Seja VIP';
-      }
-
-    } else {
-      // Usuário deslogado
-      if (btnLogin) btnLogin.style.display = '';
-      if (btnVip) btnVip.style.display = 'none';
-      if (btnLogout) btnLogout.style.display = 'none';
-    }
-  });
-}
-
-if (btnLogout) {
-  btnLogout.addEventListener('click', async () => {
-    try {
-      await signOut(auth);
-      window.location.href = 'index.html';
-    } catch (error) {
-      exibirMensagem(traduzirErro(error.code));
-    }
-  });
-}
-
-if (btnVip) {
-  btnVip.addEventListener('click', () => {
-    // Ajuste o destino conforme a página/fluxo real da Área VIP.
-    window.location.href = 'vip.html';
-  });
-}
-
-// -----------------------------------------------------
-// LÓGICA DE REDEFINIÇÃO DE SENHA
-// -----------------------------------------------------
-const resetBtn = document.getElementById('reset-password');
-if (resetBtn) {
-  resetBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    if (!email) {
-      exibirMensagem('Por favor, digite seu e-mail no campo acima para redefinir a senha.');
+    if (password !== passwordConfirm) {
+      showFeedback("As senhas não coincidem.");
       return;
     }
-    
+
+    setLoading(submitBtn, true);
     try {
-      await sendPasswordResetEmail(auth, email);
-      exibirMensagem('Link de recuperação enviado para o seu e-mail!', false);
-    } catch (error) {
-      exibirMensagem(traduzirErro(error.code));
+      await registerUser({ name, email, password });
+      showFeedback("Conta criada! Aguarde a autorização de um administrador.", "success");
+      viewSignup.reset();
+    } catch (err) {
+      showFeedback(traduzErroFirebase(err.code));
+    } finally {
+      setLoading(submitBtn, false);
     }
   });
 }
