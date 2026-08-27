@@ -106,12 +106,14 @@
 
       <div class="vip-card">
         <h3>Histórico e Transparência de Conclusão</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">Total de saques registrados (contando repetições, se a mesma pessoa pegou mais de um patrocínio): <strong id="total-saques" style="color: var(--gold-primary);">0</strong></p>
         <div class="table-container">
           <table>
             <thead>
               <tr>
                 <th>Usuário</th>
                 <th>Plataforma</th>
+                <th>Sacou</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -416,23 +418,36 @@
     // -----------------------------------------------------
     function renderizarTransparencia(data) {
       let html = '';
+      let totalSaques = 0;
+
       Object.values(data).forEach((item) => {
         const participantes = item.participantes || {};
         Object.values(participantes).forEach((p) => {
-          const statusTexto = p.statusFinal === 'sucesso' ? 'Finalizado com Sucesso'
-            : p.statusFinal === 'prejuizo' ? 'Prejuízo do Dono'
+          const statusBruto = p.statusFinal === 'sucesso' ? 'finalizado' : (p.statusFinal || 'andamento');
+          const statusTexto = statusBruto === 'finalizado' ? 'Finalizado'
+            : statusBruto === 'prejuizo' ? 'Prejuízo do Dono'
             : 'Em Andamento';
-          const cor = p.statusFinal === 'sucesso' ? '#25d366' : p.statusFinal === 'prejuizo' ? '#e05252' : 'var(--text-muted)';
+          const cor = statusBruto === 'finalizado' ? '#25d366' : statusBruto === 'prejuizo' ? '#e05252' : 'var(--text-muted)';
+
+          const sacou = !!p.sacouEm;
+          if (sacou) totalSaques++;
+          const sacouTexto = sacou ? `Sim — ${formatarData(new Date(p.sacouEm).toISOString().slice(0, 10))}` : 'Não';
+
           html += `
             <tr>
               <td>${escapeHtml(p.nomeUsuario || '—')}</td>
               <td>${escapeHtml(item.titulo || '—')}</td>
+              <td>${sacouTexto}</td>
               <td><span style="color: ${cor}">${statusTexto}</span></td>
             </tr>
           `;
         });
       });
-      transparencyBody.innerHTML = html || '<tr><td colspan="3" style="text-align: center; color: var(--text-dim);">Nenhum registro de transparência ainda.</td></tr>';
+
+      const totalEl = document.getElementById('total-saques');
+      if (totalEl) totalEl.textContent = totalSaques;
+
+      transparencyBody.innerHTML = html || '<tr><td colspan="4" style="text-align: center; color: var(--text-dim);">Nenhum registro de transparência ainda.</td></tr>';
     }
 
     // -----------------------------------------------------
@@ -503,6 +518,10 @@
           .map(([uid, p]) => {
             const key = `${id}:${uid}`;
             const aviso = p.avisoSaque || {};
+            const statusFinalNormalizado = p.statusFinal === 'sucesso' ? 'finalizado' : (p.statusFinal || 'andamento');
+            const sacouLabel = p.sacouEm
+              ? `Sacou em ${formatarData(new Date(p.sacouEm).toISOString().slice(0, 10))} — desfazer`
+              : 'Marcar como sacado';
             return `
               <div class="comprovante-admin">
                 <p class="vaga-meta">
@@ -517,6 +536,16 @@
                   <button type="button" class="btn-secondary" data-acao="salvar-aviso" data-id="${id}" data-uid="${uid}">Salvar aviso de saque</button>
                 </div>
                 <div class="admin-msg" id="aviso-msg-${id}-${uid}"></div>
+
+                <div class="admin-inline-form" style="margin-top: 0.6rem;">
+                  <label style="font-size: 0.8rem; color: var(--text-muted);">Status final:</label>
+                  <select class="admin-status-select" data-acao="mudar-status-final" data-id="${id}" data-uid="${uid}">
+                    <option value="andamento" ${statusFinalNormalizado === 'andamento' ? 'selected' : ''}>Em andamento</option>
+                    <option value="finalizado" ${statusFinalNormalizado === 'finalizado' ? 'selected' : ''}>Finalizado (sucesso)</option>
+                    <option value="prejuizo" ${statusFinalNormalizado === 'prejuizo' ? 'selected' : ''}>Prejuízo do dono</option>
+                  </select>
+                  <button type="button" class="btn-secondary" data-acao="alternar-saque" data-id="${id}" data-uid="${uid}">${sacouLabel}</button>
+                </div>
               </div>
             `;
           }).join('');
@@ -554,12 +583,25 @@
     // -----------------------------------------------------
     adminListEl.addEventListener('change', async (e) => {
       const select = e.target.closest('[data-acao="mudar-status"]');
-      if (!select) return;
-      const id = select.dataset.id;
-      try {
-        await update(ref(db, `sponsorships/${id}`), { status: select.value });
-      } catch (error) {
-        console.error('Erro ao mudar status:', error);
+      if (select) {
+        const id = select.dataset.id;
+        try {
+          await update(ref(db, `sponsorships/${id}`), { status: select.value });
+        } catch (error) {
+          console.error('Erro ao mudar status:', error);
+        }
+        return;
+      }
+
+      const selectFinal = e.target.closest('[data-acao="mudar-status-final"]');
+      if (selectFinal) {
+        const id = selectFinal.dataset.id;
+        const uid = selectFinal.dataset.uid;
+        try {
+          await update(ref(db, `sponsorships/${id}/participantes/${uid}`), { statusFinal: selectFinal.value });
+        } catch (error) {
+          console.error('Erro ao mudar status final:', error);
+        }
       }
     });
 
@@ -636,6 +678,28 @@
           msgEl.textContent = 'Erro ao salvar. Tente novamente.';
           msgEl.classList.add('erro');
         }
+      }
+    });
+
+    adminListEl.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-acao="alternar-saque"]');
+      if (!btn) return;
+
+      const id = btn.dataset.id;
+      const uid = btn.dataset.uid;
+      const participanteAtual = ultimosPatrocinios[id] && ultimosPatrocinios[id].participantes && ultimosPatrocinios[id].participantes[uid];
+      const jaSacou = !!(participanteAtual && participanteAtual.sacouEm);
+
+      btn.disabled = true;
+      try {
+        await update(ref(db, `sponsorships/${id}/participantes/${uid}`), {
+          sacouEm: jaSacou ? null : new Date().toISOString().slice(0, 10)
+        });
+        // A lista é re-renderizada automaticamente pelo onValue.
+      } catch (error) {
+        console.error('Erro ao marcar saque:', error);
+        alert('Não foi possível atualizar o saque. Tente novamente.');
+        btn.disabled = false;
       }
     });
 
