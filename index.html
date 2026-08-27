@@ -81,6 +81,40 @@
 
   </main>
 
+  <!-- Modal de envio de comprovante -->
+  <div class="modal-overlay is-hidden" id="proofModal">
+    <div class="modal-card">
+      <h3>Enviar comprovante</h3>
+      <p class="modal-subtitle" id="proofCampaignTitle">Campanha</p>
+
+      <p class="form-feedback" id="proofFeedback" role="alert" hidden></p>
+
+      <form class="modal-form" id="proofForm">
+        <div class="field">
+          <label for="proofStart">Data de início</label>
+          <input type="date" id="proofStart" required>
+        </div>
+        <div class="field">
+          <label for="proofEnd">Data de conclusão da tarefa</label>
+          <input type="date" id="proofEnd" required>
+        </div>
+        <div class="field">
+          <label for="proofNotes">Observações</label>
+          <textarea id="proofNotes" rows="3" placeholder="Detalhes da entrega, links, etc."></textarea>
+        </div>
+        <div class="field">
+          <label for="proofFile">Captura de tela (comprovante)</label>
+          <input type="file" id="proofFile" accept="image/*" required>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-mini" id="proofCancel">Cancelar</button>
+          <button type="submit" class="btn-primary" id="proofSubmit"><span class="btn-label">Enviar</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </div>
 
 <script type="module" src="firebase-config.js"></script>
