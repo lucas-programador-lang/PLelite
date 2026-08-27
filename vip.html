@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLelite - Área VIP (Patrocínios)</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .vip-container { max-width: 900px; margin: 3rem auto; padding: 0 1rem; }
+    .vip-card { background: linear-gradient(160deg, #1c1a14 0%, #100e0a 100%); border: 1px solid var(--gold-deep); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-card); }
+    .vip-card h3 { color: var(--gold-primary); margin-bottom: 1rem; font-family: var(--font-display); }
+    .locked-screen { text-align: center; padding: 4rem 1rem; }
+    .locked-screen h2 { color: var(--gold-primary); margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="index.html" class="logo">PLelite — VIP</a>
+    <nav id="nav-menu">
+      <a href="index.html" class="btn-secondary">Voltar ao Início</a>
+    </nav>
+  </header>
+
+  <main>
+    <div id="vip-content" style="display: none;" class="vip-container">
+      <div class="vip-card">
+        <h3>Painel de Patrocínios Ativos</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Preencha os dados da sua máquina, informe a data de contratação e envie a captura de tela (print).</p>
+        
+        <div id="active-sponsorships-list">
+          <!-- Injetado via JS -->
+        </div>
+      </div>
+
+      <div class="vip-card">
+        <h3>Histórico e Transparência de Conclusão</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Plataforma</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="transparency-table-body">
+              <!-- Injetado via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="locked-content" class="locked-screen" style="display: none;">
+      <h2>Acesso Restrito a Membros Autorizados</h2>
+      <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 1.5rem;">Sua conta ainda não possui autorização VIP. Entre em contato com o suporte para validação de confiança.</p>
+      <a href="https://wa.me/5568999503477?text=Olá! Gostaria de solicitar liberação na Área VIP do PLelite." target="_blank" class="btn-primary">Solicitar Acesso via WhatsApp</a>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth, db } from "./firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { ref, get, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const vipContent = document.getElementById('vip-content');
+    const lockedContent = document.getElementById('locked-content');
+    const listEl = document.getElementById('active-sponsorships-list');
+    const transparencyBody = document.getElementById('transparency-table-body');
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = 'login.html?redirect=vip.html';
+        return;
+      }
+
+      const userSnap = await get(ref(db, `users/${user.uid}`));
+      const userData = userSnap.val();
+
+      if (userData && userData.isVIP) {
+        vipContent.style.display = 'block';
+        carregarDadosVip(user.uid);
+      } else {
+        lockedContent.style.display = 'block';
+      }
+    });
+
+    function carregarDadosVip(uid) {
+      // Escuta patrocínios e vagas
+      const sRef = ref(db, 'sponsorships');
+      onValue(sRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        let html = '';
+        let transparencyHtml = '';
+
+        Object.entries(data).forEach(([id, item]) => {
+          // Renderiza painel do usuário
+          html += `
+            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;">
+              <h4 style="color: var(--text-light);">${item.titulo || 'Máquina de Patrocínio'}</h4>
+              <p style="font-size: 0.9rem; color: var(--text-muted);">Instrução: ${item.instrucoes || 'Aguarde orientações.'}</p>
+              <p style="font-size: 0.85rem; color: var(--gold-primary); margin-top: 0.5rem;">Status Atual: <strong>${item.status || 'Em andamento'}</strong></p>
+            </div>
+          `;
+
+          // Tabela de transparência global (repetindo nomes se ganharam mais de uma vez)
+          if (item.participantes) {
+            Object.values(item.participantes).forEach(p => {
+              transparencyHtml += `
+                <tr>
+                  <td>${p.nomeUsuario}</td>
+                  <td>${item.titulo}</td>
+                  <td><span style="color: ${p.statusFinal === 'sucesso' ? '#25d366' : '#e05252'}">${p.statusFinal === 'sucesso' ? 'Finalizado com Sucesso' : p.statusFinal === 'prejuizo' ? 'Prejuízo do Dono' : 'Em Andamento'}</span></td>
+                </tr>
+              `;
+            });
+          }
+        });
+
+        listEl.innerHTML = html || '<p style="color: var(--text-dim);">Nenhum patrocínio ativo no momento.</p>';
+        transparencyBody.innerHTML = transparencyHtml || '<tr><td colspan="3" style="text-align: center; color: var(--text-dim);">Nenhum registro de transparência ainda.</td></tr>';
+      });
+    }
+  </script>
+</body>
+</html>
