@@ -171,14 +171,61 @@ p  { font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.05rem); }
 
 /* ===== ALERTAS ===== */
 .alert-banner {
-  background: linear-gradient(90deg, #1a1200, #3d2601, #1a1200);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, #150e00, #3d2601, #150e00);
+  background-size: 220% 100%;
+  animation: shimmer 7s ease-in-out infinite;
   color: var(--gold-100);
   text-align: center;
-  padding: 0.85rem 1rem;
+  padding: 0.85rem 3rem;
   font-weight: 600;
-  font-size: clamp(0.75rem, 0.7rem + 0.2vw, 0.9rem);
+  font-size: clamp(0.78rem, 0.72rem + 0.25vw, 0.92rem);
+  line-height: 1.5;
   border-bottom: 1px solid var(--gold-deep);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
+}
+
+.alert-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  max-width: 900px;
+}
+
+.alert-banner-icon {
+  flex-shrink: 0;
+  font-style: normal;
+  font-size: 1.1em;
+  filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.55));
+}
+
+.alert-banner-close {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--gold-200);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.alert-banner-close:hover { background: rgba(212, 175, 55, 0.12); color: var(--gold-100); }
+
+.alert-banner.is-hidden { display: none; }
+
+@media (max-width: 768px) {
+  .alert-banner { padding: 0.85rem 2.6rem; }
+  .alert-banner-content { gap: 0.5rem; }
+  .alert-banner-close { right: 0.4rem; font-size: 1.25rem; }
 }
 
 /* ===== CABEÇALHO (GLASSMORPHISM) ===== */
@@ -403,7 +450,7 @@ input:invalid:not(:placeholder-shown) {
   letter-spacing: 0.06em;
   color: var(--bg-dark);
   background: var(--gold-gradient);
-  border-radius: var(--radius_full, 999px);
+  border-radius: var(--radius-full);
   padding: 0.25rem 0.75rem;
   margin-bottom: 0.9rem;
   font-weight: 700;
