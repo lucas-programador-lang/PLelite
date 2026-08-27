@@ -38,6 +38,7 @@ onAuthStateChanged(auth, async (user) => {
   adminContent.classList.remove("is-hidden");
 
   initTabs();
+  bindUserSearch();
   loadOverview();
   loadUsers();
   loadCampaigns();
@@ -92,12 +93,7 @@ async function loadOverview() {
 
 let usersCache = {};
 
-async function loadUsers() {
-  const snap = await get(ref(db, "users"));
-  usersCache = snap.exists() ? snap.val() : {};
-  renderUsers(usersCache);
-  populateNotifTargets();
-
+function bindUserSearch() {
   document.getElementById("userSearch").addEventListener("input", (e) => {
     const term = e.target.value.trim().toLowerCase();
     const filtered = Object.fromEntries(
@@ -107,6 +103,13 @@ async function loadUsers() {
     );
     renderUsers(filtered);
   });
+}
+
+async function loadUsers() {
+  const snap = await get(ref(db, "users"));
+  usersCache = snap.exists() ? snap.val() : {};
+  renderUsers(usersCache);
+  populateNotifTargets();
 }
 
 function renderUsers(users) {
