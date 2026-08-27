@@ -48,14 +48,11 @@ html {
 }
 
 body {
-  background-color: var(--bg-dark);
+  background-color: #08070a;
   background-image:
-    radial-gradient(ellipse at top, rgba(212, 175, 55, 0.10) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom, rgba(212, 175, 55, 0.07) 0%, transparent 50%),
-    radial-gradient(circle at 15% 20%, rgba(212, 175, 55, 0.05) 0%, transparent 35%),
-    radial-gradient(circle at 85% 75%, rgba(212, 175, 55, 0.05) 0%, transparent 35%),
-    repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px),
-    linear-gradient(180deg, #0a0a0c 0%, #060607 50%, #0a0a0c 100%);
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(212, 175, 55, 0.22) 0%, transparent 60%),
+    radial-gradient(circle at 15% 85%, rgba(212, 175, 55, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 90% 20%, rgba(212, 175, 55, 0.08) 0%, transparent 40%);
   background-attachment: fixed;
   color: var(--text-light);
   line-height: 1.6;
@@ -77,7 +74,7 @@ input:focus-visible {
 
 /* ===== Headers e Banners ===== */
 header {
-  background-color: var(--navy-900);
+  background-color: #0d0b08;
   border-bottom: 1px solid var(--border-color);
   border-image: var(--gold-gradient) 1;
   padding: 1rem 2rem;
@@ -183,10 +180,10 @@ main {
   max-width: 400px;
   margin: 4rem auto;
   padding: 2.5rem 2rem;
-  background: linear-gradient(160deg, #17171a 0%, var(--bg-card) 55%, #0e0e10 100%);
-  border: 1px solid var(--border-color);
+  background: linear-gradient(160deg, #1c1a14 0%, #100e0a 100%);
+  border: 1px solid rgba(184, 134, 11, 0.33);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card), var(--shadow-gold);
+  box-shadow: var(--shadow-card), 0 0 30px rgba(212, 175, 55, 0.08);
 }
 
 .auth-container h2 {
@@ -238,12 +235,13 @@ main {
   justify-content: space-around;
   flex-wrap: wrap;
   gap: 1rem;
-  background: linear-gradient(135deg, #12182a 0%, var(--navy-900) 60%, #0c1120 100%);
+  background: linear-gradient(160deg, #1c1a14 0%, #100e0a 100%);
   padding: 1.25rem 1rem;
   margin: 1.5rem auto;
   max-width: 800px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--gold-deep);
+  border: 1px solid rgba(184, 134, 11, 0.4);
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.06);
 }
 
 .transparency-section div {
@@ -271,8 +269,8 @@ main {
 }
 
 .card {
-  background: linear-gradient(160deg, #17171a 0%, var(--bg-card) 55%, #0e0e10 100%);
-  border: 1px solid var(--border-color);
+  background: linear-gradient(160deg, #1c1a14 0%, #100e0a 100%);
+  border: 1px solid rgba(184, 134, 11, 0.33);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-card);
