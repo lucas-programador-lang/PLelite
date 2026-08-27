@@ -17,9 +17,17 @@
     <div class="app-logo">PL<span>ELITE</span></div>
     <div class="app-user">
       <span class="app-user-name">Olá, <strong id="userName">—</strong></span>
+      <button type="button" class="notif-bell" id="notifBell" aria-label="Notificações">
+        🔔<span class="notif-badge is-hidden" id="notifBadge">0</span>
+      </button>
       <button type="button" class="btn-ghost" id="logoutBtn">Sair</button>
     </div>
   </header>
+
+  <div class="notif-panel is-hidden" id="notifPanel">
+    <p class="notif-panel-heading">AVISOS</p>
+    <div id="notifList"><p class="notif-empty">Carregando…</p></div>
+  </div>
 
   <main class="app-main">
 
