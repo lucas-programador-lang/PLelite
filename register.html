@@ -3,35 +3,156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Crie sua conta gratuita no PLelite.">
   <title>PLelite - Cadastro</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="auth-container">
     <h2>Criar Conta PLelite</h2>
-    <form id="register-form">
+
+    <form id="register-form" novalidate>
       <div class="form-group">
         <label for="nome">Nome Completo</label>
-        <input type="text" id="nome" required placeholder="Seu nome">
+        <input
+          type="text"
+          id="nome"
+          name="nome"
+          required
+          minlength="3"
+          autocomplete="name"
+          placeholder="Seu nome"
+        >
       </div>
+
       <div class="form-group">
         <label for="whatsapp">WhatsApp</label>
-        <input type="text" id="whatsapp" required placeholder="(XX) XXXXX-XXXX">
+        <input
+          type="tel"
+          id="whatsapp"
+          name="whatsapp"
+          required
+          inputmode="numeric"
+          autocomplete="tel"
+          placeholder="(XX) XXXXX-XXXX"
+          maxlength="15"
+        >
       </div>
+
       <div class="form-group">
         <label for="email">E-mail</label>
-        <input type="email" id="email" required placeholder="seu@email.com">
+        <input
+          type="email"
+          id="email"
+          name="email"
+          required
+          autocomplete="email"
+          placeholder="seu@email.com"
+        >
       </div>
+
       <div class="form-group">
         <label for="password">Senha</label>
-        <input type="password" id="password" required placeholder="Mínimo 6 caracteres">
+        <div class="password-wrapper" style="position: relative;">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            minlength="6"
+            autocomplete="new-password"
+            placeholder="Mínimo 6 caracteres"
+            style="width: 100%; padding-right: 2.5rem;"
+          >
+          <button
+            type="button"
+            id="toggle-password"
+            aria-label="Mostrar senha"
+            style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 0.85rem; color: var(--gold-primary, #b08d57);"
+          >Mostrar</button>
+        </div>
       </div>
-      <button type="submit" class="btn-primary" style="width: 100%;">Cadastrar</button>
+
+      <div class="form-group">
+        <label for="confirm-password">Confirmar Senha</label>
+        <input
+          type="password"
+          id="confirm-password"
+          name="confirm-password"
+          required
+          minlength="6"
+          autocomplete="new-password"
+          placeholder="Repita a senha"
+        >
+      </div>
+
+      <div
+        id="form-message"
+        role="alert"
+        aria-live="polite"
+        style="min-height: 1.2rem; margin-bottom: 0.75rem; font-size: 0.85rem;"
+      ></div>
+
+      <button type="submit" id="submit-btn" class="btn-primary" style="width: 100%;">
+        Cadastrar
+      </button>
     </form>
+
     <div style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
       Já tem uma conta? <a href="login.html" style="color: var(--gold-primary);">Fazer Login</a>
     </div>
   </div>
+
+  <!-- Máscara de WhatsApp + toggle de senha + validações de UI (não substitui auth.js) -->
+  <script>
+    const whatsappInput = document.getElementById('whatsapp');
+    whatsappInput.addEventListener('input', () => {
+      let v = whatsappInput.value.replace(/\D/g, '').slice(0, 11);
+      if (v.length > 10) {
+        v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+      } else if (v.length > 6) {
+        v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+      } else if (v.length > 2) {
+        v = v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+      } else if (v.length > 0) {
+        v = v.replace(/(\d{0,2})/, '($1');
+      }
+      whatsappInput.value = v;
+    });
+
+    const togglePasswordBtn = document.getElementById('toggle-password');
+    const passwordInput = document.getElementById('password');
+    togglePasswordBtn.addEventListener('click', () => {
+      const isHidden = passwordInput.type === 'password';
+      passwordInput.type = isHidden ? 'text' : 'password';
+      togglePasswordBtn.textContent = isHidden ? 'Ocultar' : 'Mostrar';
+      togglePasswordBtn.setAttribute('aria-label', isHidden ? 'Ocultar senha' : 'Mostrar senha');
+    });
+
+    // Validação de campos (HTML5) + confirmação de senha.
+    // A submissão de fato (Firebase) e as mensagens de erro/sucesso
+    // ficam a cargo do auth.js, que usa a mesma div #form-message.
+    const form = document.getElementById('register-form');
+    const confirmPasswordInput = document.getElementById('confirm-password');
+
+    form.addEventListener('submit', (e) => {
+      if (!form.checkValidity()) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        form.reportValidity();
+        return;
+      }
+
+      if (passwordInput.value !== confirmPasswordInput.value) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const formMessage = document.getElementById('form-message');
+        formMessage.textContent = 'As senhas não coincidem.';
+        formMessage.style.color = '#e05252';
+        confirmPasswordInput.focus();
+      }
+    });
+  </script>
 
   <!-- Firebase CDN Modular -->
   <script type="module" src="auth.js"></script>
