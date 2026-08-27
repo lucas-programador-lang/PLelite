@@ -1,7 +1,6 @@
 // Importações do Firebase SDK v10 (Modular)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { auth, db } from "./firebase-init.js";
 import { 
-  getAuth, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   sendPasswordResetEmail,
@@ -9,27 +8,10 @@ import {
   signOut
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
-  getDatabase, 
   ref, 
   set,
   get
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-// SUAS CONFIGURAÇÕES DO FIREBASE AQUI
-const firebaseConfig = {
-  apiKey: "AIzaSyA6LJUVIThMhRl87W10-A-wKRneohDYrJU",
-  authDomain: "plelite.firebaseapp.com",
-  databaseURL: "https://plelite-default-rtdb.firebaseio.com",
-  projectId: "plelite",
-  storageBucket: "plelite.firebasestorage.app",
-  messagingSenderId: "561668288888",
-  appId: "1:561668288888:web:77c9406f54c8d32255188d"
-};
-
-// Inicialização
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
 
 // Tradução de Erros do Firebase para Português
 function traduzirErro(codigo) {
