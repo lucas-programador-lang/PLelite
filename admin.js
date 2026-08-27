@@ -136,7 +136,9 @@ function renderUsers(users) {
         <td>${u.role === "admin" ? "Administrador" : "Usuário"}</td>
         <td>
           <div class="row-actions">
-            ${!u.isAuthorized ? `<button class="btn-mini success" data-action="authorize" data-uid="${uid}">Autorizar</button>` : ""}
+            ${!u.isAuthorized
+              ? `<button class="btn-mini success" data-action="authorize" data-uid="${uid}">Autorizar</button>`
+              : `<button class="btn-mini" data-action="deauthorize" data-uid="${uid}">Remover autorização</button>`}
             ${!u.isBlocked
               ? `<button class="btn-mini" data-action="block" data-uid="${uid}">Bloquear</button>`
               : `<button class="btn-mini success" data-action="unblock" data-uid="${uid}">Desbloquear</button>`}
@@ -153,6 +155,7 @@ function renderUsers(users) {
 
 async function handleUserAction(action, uid) {
   if (action === "authorize") await update(ref(db, `users/${uid}`), { isAuthorized: true });
+  if (action === "deauthorize") await update(ref(db, `users/${uid}`), { isAuthorized: false });
   if (action === "block") await update(ref(db, `users/${uid}`), { isBlocked: true });
   if (action === "unblock") await update(ref(db, `users/${uid}`), { isBlocked: false });
   if (action === "ban") {
