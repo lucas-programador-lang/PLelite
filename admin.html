@@ -39,6 +39,7 @@
         <button type="button" class="admin-tab" data-tab="posts">Publicações</button>
         <button type="button" class="admin-tab" data-tab="validations">Validações</button>
         <button type="button" class="admin-tab" data-tab="raffle">Bonificação</button>
+        <button type="button" class="admin-tab" data-tab="notifications">Avisos</button>
       </nav>
 
       <!-- VISÃO GERAL -->
@@ -174,6 +175,45 @@
             <table class="data-table">
               <thead><tr><th>Nome</th><th>E-mail</th><th>Ações</th></tr></thead>
               <tbody id="raffleTableBody"><tr><td colspan="3">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- AVISOS -->
+      <section class="admin-section" id="tab-notifications">
+        <div class="panel-block">
+          <h3>Enviar aviso</h3>
+          <form class="form-grid" id="notifForm">
+            <div class="field"><label for="nTitle">Título</label><input type="text" id="nTitle" required></div>
+            <div class="field">
+              <label for="nType">Tipo</label>
+              <select id="nType">
+                <option value="resgate">Data de resgate de recompensa</option>
+                <option value="plano">Plano a ser utilizado</option>
+                <option value="prazo">Prazo de entrega</option>
+                <option value="aviso">Instrução do admin</option>
+              </select>
+            </div>
+            <div class="field field-full"><label for="nMessage">Mensagem</label><textarea id="nMessage" required></textarea></div>
+            <div class="field field-full">
+              <label for="nTarget">Destinatário</label>
+              <select id="nTarget">
+                <option value="all">Todos os usuários</option>
+              </select>
+            </div>
+            <div class="field field-full">
+              <button type="submit" class="btn-primary btn-inline" id="notifSubmit"><span class="btn-label">Enviar aviso</span></button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-block">
+          <h3>Avisos enviados</h3>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Título</th><th>Tipo</th><th>Destinatário</th><th>Data</th><th>Ações</th></tr></thead>
+              <tbody id="notifsTableBody"><tr><td colspan="5">Carregando…</td></tr></tbody>
             </table>
           </div>
         </div>
