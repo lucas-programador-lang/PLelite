@@ -11,6 +11,30 @@
     .vip-card h3 { color: var(--gold-primary); margin-bottom: 1rem; font-family: var(--font-display); }
     .locked-screen { text-align: center; padding: 4rem 1rem; }
     .locked-screen h2 { color: var(--gold-primary); margin-bottom: 1rem; }
+
+    .vaga-item { border-bottom: 1px solid var(--border-color); padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+    .vaga-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .vaga-item h4 { color: var(--text-light); margin-bottom: 0.35rem; }
+    .vaga-meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+
+    .vaga-badge {
+      display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.7rem;
+      border-radius: var(--radius-full, 999px); margin-left: 0.5rem;
+    }
+    .vaga-badge.aberta { background: rgba(74, 222, 128, 0.12); color: var(--success); }
+    .vaga-badge.lotada { background: rgba(251, 191, 36, 0.12); color: var(--warning); }
+    .vaga-badge.encerrada { background: rgba(248, 113, 113, 0.12); color: var(--danger); }
+
+    .admin-inline-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.75rem; }
+    .admin-inline-form select { width: auto; flex: 1; min-width: 180px; }
+    .admin-inline-form .btn-secondary, .admin-inline-form .btn-primary { padding: 0.55rem 1rem; font-size: 0.82rem; }
+    .admin-status-select { width: auto; display: inline-block; padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+    .admin-msg { font-size: 0.8rem; min-height: 1.1rem; margin-top: 0.4rem; }
+    .admin-msg.erro { color: var(--danger); }
+    .admin-msg.ok { color: var(--success); }
+
+    #new-sponsorship-form .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    #new-sponsorship-form .form-row .form-group { flex: 1; min-width: 140px; }
   </style>
 </head>
 <body>
@@ -23,12 +47,41 @@
 
   <main>
     <div id="vip-content" style="display: none;" class="vip-container">
+
       <div class="vip-card">
-        <h3>Painel de Patrocínios Ativos</h3>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Preencha os dados da sua máquina, informe a data de contratação e envie a captura de tela (print).</p>
-        
-        <div id="active-sponsorships-list">
-          <!-- Injetado via JS -->
+        <h3>Vagas de Patrocínio Disponíveis</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Cada patrocínio tem um número limitado de vagas. Quando estiver esgotado, só é possível entrar com autorização extra do admin.</p>
+        <div id="vagas-list">
+          <p style="color: var(--text-dim);">Carregando...</p>
+        </div>
+      </div>
+
+      <div class="vip-card" id="admin-sponsorship-panel" style="display: none;">
+        <h3>Painel Admin — Gerenciar Patrocínios</h3>
+
+        <form id="new-sponsorship-form">
+          <div class="form-group">
+            <label for="new-sp-titulo">Nome da plataforma / máquina</label>
+            <input type="text" id="new-sp-titulo" placeholder="Ex: Plataforma X" required>
+          </div>
+          <div class="form-group">
+            <label for="new-sp-instrucoes">Instruções para quem entrar</label>
+            <textarea id="new-sp-instrucoes" rows="2" placeholder="Ex: enviar print da contratação em até 24h"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="new-sp-vagas">Limite de vagas</label>
+              <input type="number" id="new-sp-vagas" min="1" value="3" required>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary">Criar patrocínio</button>
+          <div id="new-sponsorship-msg" class="admin-msg" role="alert" aria-live="polite"></div>
+        </form>
+
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+
+        <div id="admin-sponsorship-list">
+          <p style="color: var(--text-dim);">Carregando...</p>
         </div>
       </div>
 
@@ -61,12 +114,24 @@
   <script type="module">
     import { auth, db } from "./firebase-init.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { ref, get, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import {
+      ref, get, push, set, update, onValue, runTransaction
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const vipContent = document.getElementById('vip-content');
     const lockedContent = document.getElementById('locked-content');
-    const listEl = document.getElementById('active-sponsorships-list');
+    const vagasListEl = document.getElementById('vagas-list');
     const transparencyBody = document.getElementById('transparency-table-body');
+    const adminPanel = document.getElementById('admin-sponsorship-panel');
+    const adminListEl = document.getElementById('admin-sponsorship-list');
+    const newSponsorshipForm = document.getElementById('new-sponsorship-form');
+    const newSponsorshipMsg = document.getElementById('new-sponsorship-msg');
+
+    let currentUid = null;
+    let currentUserNome = 'Usuário';
+    let usuarioEhAdmin = false;
+    let todosUsuarios = {};       // { uid: { nome, email, ... } }
+    let ultimosPatrocinios = {};  // cache do último snapshot de sponsorships
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -74,52 +139,323 @@
         return;
       }
 
-      const userSnap = await get(ref(db, `users/${user.uid}`));
-      const userData = userSnap.val();
+      currentUid = user.uid;
 
-      if (userData && userData.isVIP) {
+      const userSnap = await get(ref(db, `users/${user.uid}`));
+      const userData = userSnap.exists() ? userSnap.val() : {};
+      currentUserNome = userData.nome || user.email || 'Usuário';
+      usuarioEhAdmin = userData.role === 'admin';
+
+      if (userData.isVIP || usuarioEhAdmin) {
         vipContent.style.display = 'block';
-        carregarDadosVip(user.uid);
+        iniciarEscutaPatrocinios();
       } else {
         lockedContent.style.display = 'block';
+        return;
+      }
+
+      if (usuarioEhAdmin) {
+        adminPanel.style.display = 'block';
+        await carregarUsuarios();
       }
     });
 
-    function carregarDadosVip(uid) {
-      // Escuta patrocínios e vagas
+    // -----------------------------------------------------
+    // CARREGAR USUÁRIOS (para o admin autorizar vaga extra)
+    // -----------------------------------------------------
+    async function carregarUsuarios() {
+      try {
+        const snap = await get(ref(db, 'users'));
+        todosUsuarios = snap.exists() ? snap.val() : {};
+      } catch (error) {
+        console.error('Erro ao carregar usuários:', error);
+      }
+    }
+
+    // -----------------------------------------------------
+    // ESCUTA EM TEMPO REAL DOS PATROCÍNIOS
+    // -----------------------------------------------------
+    function iniciarEscutaPatrocinios() {
       const sRef = ref(db, 'sponsorships');
       onValue(sRef, (snapshot) => {
-        const data = snapshot.val() || {};
-        let html = '';
-        let transparencyHtml = '';
+        ultimosPatrocinios = snapshot.exists() ? snapshot.val() : {};
+        renderizarVagas(ultimosPatrocinios);
+        renderizarTransparencia(ultimosPatrocinios);
+        if (usuarioEhAdmin) renderizarAdminList(ultimosPatrocinios);
+      });
+    }
 
-        Object.entries(data).forEach(([id, item]) => {
-          // Renderiza painel do usuário
-          html += `
-            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;">
-              <h4 style="color: var(--text-light);">${item.titulo || 'Máquina de Patrocínio'}</h4>
-              <p style="font-size: 0.9rem; color: var(--text-muted);">Instrução: ${item.instrucoes || 'Aguarde orientações.'}</p>
-              <p style="font-size: 0.85rem; color: var(--gold-primary); margin-top: 0.5rem;">Status Atual: <strong>${item.status || 'Em andamento'}</strong></p>
-            </div>
-          `;
+    // -----------------------------------------------------
+    // RENDER: vagas disponíveis (visão de todo usuário VIP)
+    // -----------------------------------------------------
+    function renderizarVagas(data) {
+      const entradas = Object.entries(data);
 
-          // Tabela de transparência global (repetindo nomes se ganharam mais de uma vez)
-          if (item.participantes) {
-            Object.values(item.participantes).forEach(p => {
-              transparencyHtml += `
-                <tr>
-                  <td>${p.nomeUsuario}</td>
-                  <td>${item.titulo}</td>
-                  <td><span style="color: ${p.statusFinal === 'sucesso' ? '#25d366' : '#e05252'}">${p.statusFinal === 'sucesso' ? 'Finalizado com Sucesso' : p.statusFinal === 'prejuizo' ? 'Prejuízo do Dono' : 'Em Andamento'}</span></td>
-                </tr>
-              `;
-            });
+      if (entradas.length === 0) {
+        vagasListEl.innerHTML = '<p style="color: var(--text-dim);">Nenhum patrocínio disponível no momento.</p>';
+        return;
+      }
+
+      vagasListEl.innerHTML = entradas.map(([id, item]) => {
+        const participantes = item.participantes || {};
+        const extras = item.vagasExtras || {};
+        const limite = item.vagasLimite || 3;
+        const count = Object.keys(participantes).length;
+        const jaParticipa = !!participantes[currentUid];
+        const temExtra = !!extras[currentUid] && !jaParticipa;
+        const encerrado = item.status === 'encerrado';
+        const vagaLivre = count < limite || temExtra;
+
+        let statusBadge = '';
+        if (encerrado) statusBadge = '<span class="vaga-badge encerrada">Encerrado</span>';
+        else if (vagaLivre) statusBadge = '<span class="vaga-badge aberta">Vaga aberta</span>';
+        else statusBadge = '<span class="vaga-badge lotada">Lotado</span>';
+
+        let botao;
+        if (encerrado) {
+          botao = `<button type="button" class="btn-secondary" disabled>Patrocínio encerrado</button>`;
+        } else if (jaParticipa) {
+          botao = `<button type="button" class="btn-secondary" disabled>Você já está nesta vaga ✓</button>`;
+        } else if (vagaLivre) {
+          botao = `<button type="button" class="btn-primary" data-acao="pegar-vaga" data-id="${id}">${temExtra ? 'Pegar vaga (autorizada)' : 'Pegar vaga'}</button>`;
+        } else {
+          botao = `<button type="button" class="btn-secondary" disabled>Vagas esgotadas — aguarde autorização</button>`;
+        }
+
+        return `
+          <div class="vaga-item">
+            <h4>${escapeHtml(item.titulo || 'Patrocínio')}${statusBadge}</h4>
+            <p class="vaga-meta">${escapeHtml(item.instrucoes || 'Sem instruções adicionais.')}</p>
+            <p class="vaga-meta">Vagas preenchidas: <strong>${count}/${limite}</strong>${Object.keys(extras).length ? ` · ${Object.keys(extras).length} autorização(ões) extra pendente(s)` : ''}</p>
+            ${botao}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // -----------------------------------------------------
+    // AÇÃO: pegar vaga (transação atômica evita duas pessoas
+    // ocuparem a mesma vaga ao mesmo tempo)
+    // -----------------------------------------------------
+    vagasListEl.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-acao="pegar-vaga"]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      btn.disabled = true;
+      btn.textContent = 'Processando...';
+
+      try {
+        const spRef = ref(db, `sponsorships/${id}`);
+        const resultado = await runTransaction(spRef, (item) => {
+          if (!item) return item;
+
+          const participantes = item.participantes || {};
+          if (participantes[currentUid]) return item;
+
+          const limite = item.vagasLimite || 3;
+          const count = Object.keys(participantes).length;
+          const extras = item.vagasExtras || {};
+          const temExtra = !!extras[currentUid];
+
+          if (count < limite || temExtra) {
+            participantes[currentUid] = {
+              nomeUsuario: currentUserNome,
+              entradaEm: Date.now(),
+              statusFinal: 'andamento'
+            };
+            item.participantes = participantes;
+            if (temExtra) {
+              const novasExtras = { ...extras };
+              delete novasExtras[currentUid];
+              item.vagasExtras = novasExtras;
+            }
           }
+          return item;
         });
 
-        listEl.innerHTML = html || '<p style="color: var(--text-dim);">Nenhum patrocínio ativo no momento.</p>';
-        transparencyBody.innerHTML = transparencyHtml || '<tr><td colspan="3" style="text-align: center; color: var(--text-dim);">Nenhum registro de transparência ainda.</td></tr>';
+        const dadosFinais = resultado.snapshot.val();
+        const participantesFinal = (dadosFinais && dadosFinais.participantes) || {};
+
+        if (!participantesFinal[currentUid]) {
+          alert('Essa vaga acabou de ser preenchida por outra pessoa. Aguarde uma nova autorização.');
+        }
+      } catch (error) {
+        console.error('Erro ao pegar vaga:', error);
+        alert('Não foi possível pegar a vaga. Tente novamente.');
+      }
+      // A lista é re-renderizada automaticamente pelo onValue.
+    });
+
+    // -----------------------------------------------------
+    // RENDER: tabela de transparência (participantes)
+    // -----------------------------------------------------
+    function renderizarTransparencia(data) {
+      let html = '';
+      Object.values(data).forEach((item) => {
+        const participantes = item.participantes || {};
+        Object.values(participantes).forEach((p) => {
+          const statusTexto = p.statusFinal === 'sucesso' ? 'Finalizado com Sucesso'
+            : p.statusFinal === 'prejuizo' ? 'Prejuízo do Dono'
+            : 'Em Andamento';
+          const cor = p.statusFinal === 'sucesso' ? '#25d366' : p.statusFinal === 'prejuizo' ? '#e05252' : 'var(--text-muted)';
+          html += `
+            <tr>
+              <td>${escapeHtml(p.nomeUsuario || '—')}</td>
+              <td>${escapeHtml(item.titulo || '—')}</td>
+              <td><span style="color: ${cor}">${statusTexto}</span></td>
+            </tr>
+          `;
+        });
       });
+      transparencyBody.innerHTML = html || '<tr><td colspan="3" style="text-align: center; color: var(--text-dim);">Nenhum registro de transparência ainda.</td></tr>';
+    }
+
+    // -----------------------------------------------------
+    // ADMIN: criar novo patrocínio
+    // -----------------------------------------------------
+    if (newSponsorshipForm) {
+      newSponsorshipForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        newSponsorshipMsg.textContent = '';
+        newSponsorshipMsg.className = 'admin-msg';
+
+        const titulo = document.getElementById('new-sp-titulo').value.trim();
+        const instrucoes = document.getElementById('new-sp-instrucoes').value.trim();
+        const vagasLimite = parseInt(document.getElementById('new-sp-vagas').value, 10) || 3;
+
+        if (!titulo) {
+          newSponsorshipMsg.textContent = 'Informe o nome da plataforma.';
+          newSponsorshipMsg.classList.add('erro');
+          return;
+        }
+
+        try {
+          await set(push(ref(db, 'sponsorships')), {
+            titulo,
+            instrucoes,
+            status: 'aberto',
+            vagasLimite,
+            participantes: {},
+            vagasExtras: {},
+            createdAt: Date.now()
+          });
+          newSponsorshipForm.reset();
+          document.getElementById('new-sp-vagas').value = 3;
+          newSponsorshipMsg.textContent = 'Patrocínio criado.';
+          newSponsorshipMsg.classList.add('ok');
+        } catch (error) {
+          console.error('Erro ao criar patrocínio:', error);
+          newSponsorshipMsg.textContent = 'Erro ao criar. Tente novamente.';
+          newSponsorshipMsg.classList.add('erro');
+        }
+      });
+    }
+
+    // -----------------------------------------------------
+    // RENDER: painel admin de gerenciamento de vagas
+    // -----------------------------------------------------
+    function renderizarAdminList(data) {
+      const entradas = Object.entries(data);
+
+      if (entradas.length === 0) {
+        adminListEl.innerHTML = '<p style="color: var(--text-dim);">Nenhum patrocínio criado ainda.</p>';
+        return;
+      }
+
+      const opcoesUsuarios = Object.entries(todosUsuarios)
+        .map(([uid, u]) => `<option value="${uid}">${escapeHtml(u.nome || u.email || uid)}</option>`)
+        .join('');
+
+      adminListEl.innerHTML = entradas.map(([id, item]) => {
+        const participantes = item.participantes || {};
+        const extras = item.vagasExtras || {};
+        const limite = item.vagasLimite || 3;
+        const count = Object.keys(participantes).length;
+        const status = item.status || 'aberto';
+
+        return `
+          <div class="vaga-item">
+            <h4>${escapeHtml(item.titulo || 'Patrocínio')}</h4>
+            <p class="vaga-meta">Vagas: <strong>${count}/${limite}</strong>${Object.keys(extras).length ? ` · autorizações extra pendentes: ${Object.keys(extras).map(uid => escapeHtml((todosUsuarios[uid] && todosUsuarios[uid].nome) || uid)).join(', ')}` : ''}</p>
+
+            <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Status do patrocínio</label>
+            <select class="admin-status-select" data-acao="mudar-status" data-id="${id}">
+              <option value="aberto" ${status === 'aberto' ? 'selected' : ''}>Aberto</option>
+              <option value="lotado" ${status === 'lotado' ? 'selected' : ''}>Lotado</option>
+              <option value="encerrado" ${status === 'encerrado' ? 'selected' : ''}>Encerrado</option>
+            </select>
+
+            <div class="admin-inline-form">
+              <select data-usuario-extra="${id}">
+                <option value="">Selecionar usuário para autorizar vaga extra...</option>
+                ${opcoesUsuarios}
+              </select>
+              <button type="button" class="btn-secondary" data-acao="autorizar-extra" data-id="${id}">Autorizar vaga extra</button>
+            </div>
+            <div class="admin-msg" id="admin-msg-${id}"></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // -----------------------------------------------------
+    // ADMIN: ações (delegação de eventos, já que a lista é
+    // re-renderizada a cada atualização em tempo real)
+    // -----------------------------------------------------
+    adminListEl.addEventListener('change', async (e) => {
+      const select = e.target.closest('[data-acao="mudar-status"]');
+      if (!select) return;
+      const id = select.dataset.id;
+      try {
+        await update(ref(db, `sponsorships/${id}`), { status: select.value });
+      } catch (error) {
+        console.error('Erro ao mudar status:', error);
+      }
+    });
+
+    adminListEl.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-acao="autorizar-extra"]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const select = adminListEl.querySelector(`[data-usuario-extra="${id}"]`);
+      const msgEl = document.getElementById(`admin-msg-${id}`);
+      const uidSelecionado = select ? select.value : '';
+
+      msgEl.textContent = '';
+      msgEl.className = 'admin-msg';
+
+      if (!uidSelecionado) {
+        msgEl.textContent = 'Selecione um usuário primeiro.';
+        msgEl.classList.add('erro');
+        return;
+      }
+
+      const jaParticipa = ultimosPatrocinios[id] && ultimosPatrocinios[id].participantes && ultimosPatrocinios[id].participantes[uidSelecionado];
+      if (jaParticipa) {
+        msgEl.textContent = 'Esse usuário já está nesta vaga.';
+        msgEl.classList.add('erro');
+        return;
+      }
+
+      try {
+        await set(ref(db, `sponsorships/${id}/vagasExtras/${uidSelecionado}`), true);
+        msgEl.textContent = 'Vaga extra autorizada.';
+        msgEl.classList.add('ok');
+        if (select) select.value = '';
+      } catch (error) {
+        console.error('Erro ao autorizar vaga extra:', error);
+        msgEl.textContent = 'Erro ao autorizar. Tente novamente.';
+        msgEl.classList.add('erro');
+      }
+    });
+
+    // -----------------------------------------------------
+    // UTIL
+    // -----------------------------------------------------
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str ?? '';
+      return div.innerHTML;
     }
   </script>
 </body>
