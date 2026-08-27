@@ -1,91 +1,100 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Acesse sua conta no PLelite.">
-  <title>PLelite - Login</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PL ELITE — Entrar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="auth-container">
-    <h2>Acessar PLelite</h2>
 
-    <form id="login-form" novalidate>
-      <div class="form-group">
-        <label for="email">E-mail</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          required
-          autocomplete="email"
-          placeholder="seu@email.com"
-        >
-      </div>
+<div class="stage">
 
-      <div class="form-group">
-        <label for="password">Senha</label>
-        <div class="password-wrapper" style="position: relative;">
-          <input
-            type="password"
-            id="password"
-            name="password"
-            required
-            autocomplete="current-password"
-            placeholder="Sua senha"
-            style="width: 100%; padding-right: 2.5rem;"
-          >
-          <button
-            type="button"
-            id="toggle-password"
-            aria-label="Mostrar senha"
-            style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 0.85rem; color: var(--gold-primary, #b08d57);"
-          >Mostrar</button>
-        </div>
-      </div>
-
-      <div
-        id="form-message"
-        role="alert"
-        aria-live="polite"
-        style="min-height: 1.2rem; margin-bottom: 0.75rem; font-size: 0.85rem;"
-      ></div>
-
-      <button type="submit" id="submit-btn" class="btn-primary" style="width: 100%;">
-        Entrar
-      </button>
-    </form>
-
-    <div style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
-      <a href="#" id="reset-password" style="color: var(--gold-primary);">Esqueceu sua senha?</a><br><br>
-      Ainda não tem conta? <a href="register.html" style="color: var(--gold-primary);">Cadastre-se</a>
+  <aside class="brand-panel">
+    <div class="orbit-wrap" aria-hidden="true">
+      <div class="orbit-ring"></div>
+      <div class="orbit-dot"></div>
     </div>
-  </div>
 
-  <!-- Toggle de visibilidade de senha (não mexe com o Firebase) -->
-  <script>
-    const togglePasswordBtn = document.getElementById('toggle-password');
-    const passwordInput = document.getElementById('password');
-    togglePasswordBtn.addEventListener('click', () => {
-      const isHidden = passwordInput.type === 'password';
-      passwordInput.type = isHidden ? 'text' : 'password';
-      togglePasswordBtn.textContent = isHidden ? 'Ocultar' : 'Mostrar';
-      togglePasswordBtn.setAttribute('aria-label', isHidden ? 'Ocultar senha' : 'Mostrar senha');
-    });
+    <div class="brand-content">
+      <span class="brand-eyebrow">PORTAL DE CAMPANHAS &amp; RECOMPENSAS</span>
+      <h1 class="brand-word">PL<span class="brand-word-accent">ELITE</span></h1>
+      <p class="brand-tagline">Acesso reservado a quem entrega resultado. Acompanhe campanhas, valide entregas e resgate recompensas em um só lugar.</p>
 
-    // Validação nativa antes de deixar o auth.js assumir o submit.
-    const form = document.getElementById('login-form');
-    form.addEventListener('submit', (e) => {
-      if (!form.checkValidity()) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        form.reportValidity();
-      }
-    });
-  </script>
+      <ul class="brand-stats" role="list">
+        <li><span class="stat-num">01</span><span class="stat-label">Cadastro &amp; autorização</span></li>
+        <li><span class="stat-num">02</span><span class="stat-label">Campanhas ativas</span></li>
+        <li><span class="stat-num">03</span><span class="stat-label">Recompensas resgatadas</span></li>
+      </ul>
+    </div>
+  </aside>
 
-  <!-- Firebase CDN Modular -->
-  <script type="module" src="auth.js"></script>
+  <main class="auth-panel">
+    <div class="auth-card">
+
+      <!-- LOGIN -->
+      <div id="panelLogin">
+        <div class="auth-heading">
+          <h2>Entrar</h2>
+          <p>Acesse sua conta para acompanhar suas campanhas.</p>
+        </div>
+
+        <p class="form-feedback" id="formFeedback" role="alert" hidden></p>
+
+        <form class="auth-view" id="viewLogin" novalidate>
+          <div class="field">
+            <label for="loginEmail">E-mail</label>
+            <input type="email" id="loginEmail" name="email" autocomplete="email" placeholder="voce@exemplo.com" required>
+          </div>
+
+          <div class="field">
+            <label for="loginPassword">Senha</label>
+            <div class="field-with-action">
+              <input type="password" id="loginPassword" name="password" autocomplete="current-password" placeholder="••••••••" required minlength="6">
+              <button type="button" class="ghost-toggle" data-toggle-password="loginPassword" aria-label="Mostrar senha">Mostrar</button>
+            </div>
+          </div>
+
+          <button type="button" class="link-inline" id="goToReset">Esqueci minha senha</button>
+
+          <button type="submit" class="btn-primary" id="loginSubmit">
+            <span class="btn-label">Entrar</span>
+          </button>
+        </form>
+
+        <p class="auth-switch">Não tem conta? <a href="register.html">Cadastre-se</a></p>
+      </div>
+
+      <!-- RECUPERAR SENHA (inline, mesma página) -->
+      <div id="panelReset" class="is-hidden">
+        <div class="auth-heading">
+          <h2>Recuperar senha</h2>
+          <p>Informe o e-mail cadastrado para receber o link de redefinição.</p>
+        </div>
+
+        <form class="auth-view" id="viewReset" novalidate>
+          <div class="field">
+            <label for="resetEmail">E-mail</label>
+            <input type="email" id="resetEmail" name="email" autocomplete="email" placeholder="voce@exemplo.com" required>
+          </div>
+
+          <button type="submit" class="btn-primary" id="resetSubmit">
+            <span class="btn-label">Enviar link de redefinição</span>
+          </button>
+
+          <button type="button" class="link-inline" id="backToLogin">Voltar para o login</button>
+        </form>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="auth.js"></script>
 </body>
 </html>
