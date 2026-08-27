@@ -100,6 +100,25 @@ header {
   letter-spacing: 0.02em;
 }
 
+#nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+#nav-menu .btn-primary,
+#nav-menu .btn-secondary {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
 .alert-banner {
   background: linear-gradient(90deg, #2a1a03, #422006, #2a1a03);
   color: var(--gold-light);
@@ -397,6 +416,16 @@ tbody tr:hover {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
+  }
+
+  #nav-menu {
+    width: 100%;
+  }
+
+  #nav-menu .btn-primary,
+  #nav-menu .btn-secondary {
+    flex: 1;
+    text-align: center;
   }
 
   .auth-container {
