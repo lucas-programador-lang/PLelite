@@ -5,11 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="PLelite — plataforma de patrocínios e sorteios com transparência total nos valores arrecadados.">
   <meta name="theme-color" content="#08070a">
+
+  <!-- Open Graph / compartilhamento em redes sociais -->
+  <meta property="og:title" content="PLelite - Patrocínios e Sorteios com Transparência">
+  <meta property="og:description" content="Acompanhe em tempo real os valores pagos em patrocínios e arrecadados para sorteios.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="favicon.png">
+
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="style.css">
   <title>PLelite - Início</title>
 </head>
 <body>
+  <!-- Link de acessibilidade para pular direto ao conteúdo -->
+  <a href="#main-content" class="skip-link">Pular para o conteúdo</a>
 
   <!-- ===== Alerta Fixo ===== -->
   <div class="alert-banner" role="alert">
@@ -19,7 +28,6 @@
   <!-- ===== Cabeçalho ===== -->
   <header>
     <a href="index.html" class="logo">PLelite</a>
-
     <!-- Conteúdo alternado via JS conforme status de login -->
     <nav id="nav-menu" aria-label="Navegação principal">
       <a href="login.html" class="btn-primary" id="btn-login">Entrar</a>
@@ -28,7 +36,7 @@
     </nav>
   </header>
 
-  <main>
+  <main id="main-content">
     <!-- ===== Área de Transparência ===== -->
     <section class="transparency-section" aria-label="Transparência de valores">
       <div>
@@ -44,8 +52,14 @@
     <!-- ===== Feed de Postagens ===== -->
     <!-- Cards injetados dinamicamente por script.js -->
     <section id="feed" aria-label="Feed de postagens" aria-live="polite">
+      <p id="feed-placeholder" class="feed-placeholder">Carregando publicações...</p>
     </section>
   </main>
+
+  <!-- ===== Rodapé ===== -->
+  <footer class="site-footer">
+    <p>&copy; <span id="current-year"></span> PLelite. Todos os direitos reservados.</p>
+  </footer>
 
   <!-- ===== Botão Flutuante do WhatsApp ===== -->
   <a
@@ -54,9 +68,20 @@
     rel="noopener noreferrer"
     class="whatsapp-float"
     aria-label="Entrar no grupo do WhatsApp"
+    title="Entrar no grupo do WhatsApp"
   >
     <span aria-hidden="true">📱</span>
   </a>
+
+  <noscript>
+    <p style="text-align:center; padding: 1rem;">
+      Ative o JavaScript no seu navegador para usar o PLelite corretamente.
+    </p>
+  </noscript>
+
+  <script>
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+  </script>
 
   <!-- ===== Firebase e Scripts da Aplicação ===== -->
   <script type="module" src="auth.js"></script>
