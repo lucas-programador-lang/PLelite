@@ -8,13 +8,13 @@ import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-
 
 // SUAS CONFIGURAÇÕES DO FIREBASE AQUI
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "SEU_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyA6LJUVIThMhRl87W10-A-wKRneohDYrJU",
+  authDomain: "plelite.firebaseapp.com",
+  databaseURL: "https://plelite-default-rtdb.firebaseio.com",
+  projectId: "plelite",
+  storageBucket: "plelite.firebasestorage.app",
+  messagingSenderId: "561668288888",
+  appId: "1:561668288888:web:77c9406f54c8d32255188d"
 };
 
 const app = initializeApp(firebaseConfig);
