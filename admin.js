@@ -709,6 +709,7 @@ document.getElementById("raffleForm").addEventListener("submit", async (e) => {
   await update(ref(db, "raffle"), {
     fund: Number(document.getElementById("rFund").value) || 0,
     date: document.getElementById("rDate").value,
+    winner: document.getElementById("rWinner").value.trim(),
     rules: document.getElementById("rRules").value.trim()
   });
   await update(ref(db, "metrics"), { bonusFund: Number(document.getElementById("rFund").value) || 0 });
@@ -723,6 +724,7 @@ async function loadRaffle() {
   const raffle = raffleSnap.exists() ? raffleSnap.val() : {};
   document.getElementById("rFund").value = raffle.fund || "";
   document.getElementById("rDate").value = raffle.date || "";
+  document.getElementById("rWinner").value = raffle.winner || "";
   document.getElementById("rRules").value = raffle.rules || "";
 
   const entries = entriesSnap.exists() ? entriesSnap.val() : {};
