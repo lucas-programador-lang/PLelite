@@ -29,7 +29,16 @@
     <div id="notifList"><p class="notif-empty">Carregando…</p></div>
   </div>
 
-  <main class="app-main">
+  <nav class="site-menu">
+    <a href="#top">🏠 Início</a>
+    <a href="#publicacoesSection">📢 Publicações</a>
+    <a href="#patrociniosSection">💰 Patrocínios</a>
+    <a href="#raffleSection">🎁 Sorteios</a>
+    <a href="https://chat.whatsapp.com/EWHtx2C2kGXERf4ZpMyXvS?s=cl&amp;p=a&amp;mlu=4" target="_blank" rel="noopener">👥 Grupo</a>
+    <a href="admin.html">🔐 Área Administrativa</a>
+  </nav>
+
+  <main class="app-main" id="top">
 
     <!-- Tela exibida enquanto a conta aguarda autorização do admin -->
     <div class="gate-screen is-hidden" id="gatePending">
@@ -82,7 +91,7 @@
         </div>
       </section>
 
-      <section class="campaign-section">
+      <section class="campaign-section" id="publicacoesSection">
         <div class="section-heading">
           <h2>Publicações</h2>
           <span id="postsCount"></span>
@@ -92,7 +101,7 @@
         </div>
       </section>
 
-      <section class="campaign-section">
+      <section class="campaign-section" id="patrociniosSection">
         <div class="section-heading">
           <h2>Campanhas disponíveis e ativas</h2>
           <span id="activeCount"></span>
