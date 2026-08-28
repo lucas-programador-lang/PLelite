@@ -21,6 +21,7 @@ const metricBonusFund = document.getElementById("metricBonusFund");
 const metricActiveUsers = document.getElementById("metricActiveUsers");
 const metricActiveCampaigns = document.getElementById("metricActiveCampaigns");
 
+const raffleInfoEl = document.getElementById("raffleInfo");
 const postsGridEl = document.getElementById("postsGrid");
 const postsCountEl = document.getElementById("postsCount");
 
@@ -84,6 +85,7 @@ onAuthStateChanged(auth, async (user) => {
   show(dashboardContent);
   loadDashboard();
   loadPosts();
+  loadRaffleInfo();
   loadNotifications();
 });
 
@@ -180,6 +182,32 @@ function buildCampaignCard(c) {
   `;
 
   return card;
+}
+
+/* ---------- Sorteio ---------- */
+
+async function loadRaffleInfo() {
+  const snap = await get(ref(db, "raffle"));
+  const raffle = snap.exists() ? snap.val() : {};
+
+  raffleInfoEl.innerHTML = `
+    <div class="metric-card">
+      <span class="metric-label">VALOR ARRECADADO</span>
+      <span class="metric-value">${formatCurrency(raffle.fund || 0)}</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">DATA DO SORTEIO</span>
+      <span class="metric-value" style="font-size:19px;">${raffle.date ? new Date(raffle.date).toLocaleDateString("pt-BR") : "A definir"}</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">RESULTADO</span>
+      <span class="metric-value" style="font-size:19px;">${raffle.winner ? escapeHtml(raffle.winner) : "Ainda não realizado"}</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">REGRAS</span>
+      <span style="font-size:12.5px;color:var(--text-muted);display:block;">${raffle.rules ? escapeHtml(raffle.rules) : "A definir pelo administrador."}</span>
+    </div>
+  `;
 }
 
 /* ---------- Publicações ---------- */
