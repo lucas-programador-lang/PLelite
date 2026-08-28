@@ -41,6 +41,7 @@
         <button type="button" class="admin-tab" data-tab="history">Histórico</button>
         <button type="button" class="admin-tab" data-tab="raffle">Bonificação</button>
         <button type="button" class="admin-tab" data-tab="notifications">Avisos</button>
+        <button type="button" class="admin-tab" data-tab="audit">Auditoria</button>
       </nav>
 
       <!-- VISÃO GERAL -->
@@ -235,6 +236,20 @@
             <table class="data-table">
               <thead><tr><th>Título</th><th>Tipo</th><th>Destinatário</th><th>Data</th><th>Ações</th></tr></thead>
               <tbody id="notifsTableBody"><tr><td colspan="5">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- AUDITORIA -->
+      <section class="admin-section" id="tab-audit">
+        <div class="panel-block">
+          <h3>Registro de alterações</h3>
+          <p class="modal-subtitle" style="margin:-8px 0 18px;">Últimas 100 ações administrativas registradas.</p>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Quando</th><th>Admin</th><th>Ação</th></tr></thead>
+              <tbody id="auditTableBody"><tr><td colspan="3">Carregando…</td></tr></tbody>
             </table>
           </div>
         </div>
