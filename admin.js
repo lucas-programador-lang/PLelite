@@ -263,13 +263,26 @@ async function loadCampaigns() {
   body.innerHTML = entries.map(([id, c]) => {
     const extraNames = c.extraSlots ? Object.values(c.extraSlots).map((n) => escapeHtml(n)).join(", ") : "";
     const authorizedUsers = Object.entries(usersCache).filter(([, u]) => u.isAuthorized && !u.isBlocked);
+    const participants = c.participants || {};
+    const filledCount = Object.keys(participants).length || c.filledSlots || 0;
+
+    const participantChips = Object.entries(participants).map(([uid, name]) => `
+      <span class="status-tag status-ativa" style="display:inline-flex;align-items:center;gap:6px;margin:2px 4px 2px 0;">
+        ${escapeHtml(name)}
+        <button type="button" data-action="remove-participant" data-id="${id}" data-uid="${uid}" style="background:none;border:none;color:inherit;cursor:pointer;font-weight:700;padding:0;">×</button>
+      </span>`).join("");
 
     return `
     <tr>
       <td>${escapeHtml(c.title || "—")}</td>
       <td>
-        ${c.filledSlots || 0}/${c.maxSlots || 3}
+        ${filledCount}/${c.maxSlots || 3}
         ${extraNames ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Vaga extra: ${extraNames}</div>` : ""}
+        ${participantChips ? `<div style="margin-top:6px;">${participantChips}</div>` : ""}
+        <select class="btn-mini" data-action="add-participant" data-id="${id}" style="margin-top:6px;">
+          <option value="">Adicionar participante…</option>
+          ${authorizedUsers.filter(([uid]) => !participants[uid]).map(([uid, u]) => `<option value="${uid}">${escapeHtml(u.name || u.email)}</option>`).join("")}
+        </select>
       </td>
       <td>
         <select class="btn-mini" data-action="status" data-id="${id}">
@@ -337,6 +350,25 @@ async function loadCampaigns() {
         maxSlots: (c.maxSlots || 3) + 1,
         [`extraSlots/${uid}`]: u.name || u.email
       });
+      loadCampaigns();
+    });
+  });
+
+  body.querySelectorAll("select[data-action='add-participant']").forEach((sel) => {
+    sel.addEventListener("change", async () => {
+      const uid = sel.value;
+      if (!uid) return;
+      const u = usersCache[uid];
+      await update(ref(db, `campaigns/${sel.dataset.id}`), {
+        [`participants/${uid}`]: u.name || u.email
+      });
+      loadCampaigns();
+    });
+  });
+
+  body.querySelectorAll("button[data-action='remove-participant']").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await remove(ref(db, `campaigns/${btn.dataset.id}/participants/${btn.dataset.uid}`));
       loadCampaigns();
     });
   });
