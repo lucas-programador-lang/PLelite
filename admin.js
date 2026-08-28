@@ -140,7 +140,7 @@ function renderUsers(users) {
         <td>${escapeHtml(u.name || "—")}</td>
         <td>${escapeHtml(u.email || "—")}</td>
         <td>${statusTag}</td>
-        <td>${u.role === "admin" ? "Administrador" : "Usuário"}</td>
+        <td>${u.role === "admin" ? "Administrador" : "Usuário"}${u.referredBy ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">via link: ${escapeHtml(u.referredBy)}</div>` : ""}</td>
         <td>
           <div class="row-actions">
             <button class="btn-mini" data-action="edit" data-uid="${uid}">Editar</button>
