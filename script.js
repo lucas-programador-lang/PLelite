@@ -55,6 +55,7 @@ const GENERIC_WHATSAPP_URL = "https://wa.me/5568999503477?text=vim%20pelo%20o%20
 
 let currentUser = null;
 let currentUserName = "";
+let currentUserReferredBy = null;
 
 /* ---------- Guarda de rota ---------- */
 
@@ -81,6 +82,7 @@ onAuthStateChanged(auth, async (user) => {
 
   currentUser = user;
   currentUserName = userData.name || user.email;
+  currentUserReferredBy = userData.referredBy || null;
   userNameEl.textContent = currentUserName;
   show(dashboardContent);
   loadDashboard();
@@ -187,8 +189,18 @@ function buildCampaignCard(c) {
 /* ---------- Sorteio ---------- */
 
 async function loadRaffleInfo() {
-  const snap = await get(ref(db, "raffle"));
-  const raffle = snap.exists() ? snap.val() : {};
+  const [raffleSnap, entriesSnap] = await Promise.all([
+    get(ref(db, "raffle")),
+    get(ref(db, "raffleEntries"))
+  ]);
+
+  const raffle = raffleSnap.exists() ? raffleSnap.val() : {};
+  const entries = entriesSnap.exists() ? Object.values(entriesSnap.val()) : [];
+  const isEligible = !!currentUserReferredBy;
+
+  const participantsList = entries.length
+    ? entries.map((u) => escapeHtml(u.name || u.email || "—")).join(", ")
+    : "Ninguém participando ainda.";
 
   raffleInfoEl.innerHTML = `
     <div class="metric-card">
@@ -204,8 +216,19 @@ async function loadRaffleInfo() {
       <span class="metric-value" style="font-size:19px;">${raffle.winner ? escapeHtml(raffle.winner) : "Ainda não realizado"}</span>
     </div>
     <div class="metric-card">
+      <span class="metric-label">SUA ELEGIBILIDADE</span>
+      <span class="status-tag ${isEligible ? "status-ativa" : "status-cancelada"}" style="display:inline-block;">
+        ${isEligible ? "Elegível" : "Não elegível"}
+      </span>
+      ${!isEligible ? `<p style="font-size:11px;color:var(--text-muted);margin:8px 0 0;">Somente quem entrou pelo link de indicação participa.</p>` : ""}
+    </div>
+    <div class="metric-card" style="grid-column:1 / -1;">
+      <span class="metric-label">QUEM ESTÁ PARTICIPANDO</span>
+      <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${participantsList}</span>
+    </div>
+    <div class="metric-card" style="grid-column:1 / -1;">
       <span class="metric-label">REGRAS</span>
-      <span style="font-size:12.5px;color:var(--text-muted);display:block;">${raffle.rules ? escapeHtml(raffle.rules) : "A definir pelo administrador."}</span>
+      <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${raffle.rules ? escapeHtml(raffle.rules) : "A definir pelo administrador."}</span>
     </div>
   `;
 }
