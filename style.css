@@ -653,6 +653,16 @@ button, input { font-family: inherit; }
   color: #0c0a08;
 }
 
+/* Variante usada como faixa independente (ex: botão de grupo do WhatsApp
+   no topo do dashboard) — não fica dentro de um flex, então precisa
+   virar bloco próprio com espaçamento embaixo. */
+.btn-whatsapp-group {
+  display: block;
+  margin: 0 0 28px;
+  padding: 13px 0;
+  font-size: 13.5px;
+}
+
 .empty-state {
   padding: 28px;
   text-align: center;
