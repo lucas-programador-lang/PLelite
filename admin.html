@@ -223,9 +223,48 @@
 
   </main>
 
+  <!-- Modal: editar usuário -->
+  <div class="modal-overlay is-hidden" id="editUserModal">
+    <div class="modal-card">
+      <h3>Editar usuário</h3>
+      <p class="modal-subtitle">O e-mail aqui é só o registro no banco (exibição). Não altera o e-mail de login da conta.</p>
+      <p class="form-feedback" id="editUserFeedback" role="alert" hidden></p>
+      <form class="modal-form" id="editUserForm">
+        <div class="field"><label for="euName">Nome</label><input type="text" id="euName" required></div>
+        <div class="field"><label for="euEmail">E-mail (exibição)</label><input type="email" id="euEmail" required></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-mini" id="euCancel">Cancelar</button>
+          <button type="submit" class="btn-primary" id="euSubmit"><span class="btn-label">Salvar</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: editar campanha -->
+  <div class="modal-overlay is-hidden" id="editCampaignModal">
+    <div class="modal-card">
+      <h3>Editar campanha</h3>
+      <p class="form-feedback" id="editCampaignFeedback" role="alert" hidden></p>
+      <form class="modal-form" id="editCampaignForm">
+        <div class="field"><label for="ecTitle">Nome</label><input type="text" id="ecTitle" required></div>
+        <div class="field"><label for="ecPlan">Plano exigido</label><input type="text" id="ecPlan"></div>
+        <div class="field"><label for="ecDesc">Descrição</label><textarea id="ecDesc"></textarea></div>
+        <div class="field"><label for="ecBudget">Orçamento (R$)</label><input type="number" id="ecBudget" min="0" step="0.01"></div>
+        <div class="field"><label for="ecMaxSlots">Limite de vagas</label><input type="number" id="ecMaxSlots" min="1"></div>
+        <div class="field"><label for="ecStart">Data de início</label><input type="date" id="ecStart"></div>
+        <div class="field"><label for="ecEnd">Data de término</label><input type="date" id="ecEnd"></div>
+        <div class="field"><label for="ecWhats">WhatsApp (só números, com DDI)</label><input type="text" id="ecWhats"></div>
+        <div class="field"><label for="ecWhatsMsg">Mensagem pré-configurada</label><input type="text" id="ecWhatsMsg"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-mini" id="ecCancel">Cancelar</button>
+          <button type="submit" class="btn-primary" id="ecSubmit"><span class="btn-label">Salvar</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </div>
 
-<script type="module" src="firebase-config.js"></script>
 <script type="module" src="admin.js"></script>
 </body>
 </html>
