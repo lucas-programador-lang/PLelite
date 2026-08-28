@@ -43,7 +43,7 @@ onAuthStateChanged(auth, async (user) => {
   bindEditCampaignModal();
   bindEditPostModal();
   loadOverview();
-  loadUsers();
+  await loadUsers();
   loadCampaigns();
   loadPosts();
   loadValidations();
@@ -260,10 +260,17 @@ async function loadCampaigns() {
     return;
   }
 
-  body.innerHTML = entries.map(([id, c]) => `
+  body.innerHTML = entries.map(([id, c]) => {
+    const extraNames = c.extraSlots ? Object.values(c.extraSlots).map((n) => escapeHtml(n)).join(", ") : "";
+    const authorizedUsers = Object.entries(usersCache).filter(([, u]) => u.isAuthorized && !u.isBlocked);
+
+    return `
     <tr>
       <td>${escapeHtml(c.title || "—")}</td>
-      <td>${c.filledSlots || 0}/${c.maxSlots || 3}</td>
+      <td>
+        ${c.filledSlots || 0}/${c.maxSlots || 3}
+        ${extraNames ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Vaga extra: ${extraNames}</div>` : ""}
+      </td>
       <td>
         <select class="btn-mini" data-action="status" data-id="${id}">
           ${["ativa", "andamento", "concluida", "cancelada"].map(
@@ -283,11 +290,16 @@ async function loadCampaigns() {
         <div class="row-actions">
           <button class="btn-mini" data-action="edit-campaign" data-id="${id}">Editar</button>
           <button class="btn-mini" data-action="expand" data-id="${id}">+1 vaga</button>
+          <select class="btn-mini" data-action="extra-slot-user" data-id="${id}">
+            <option value="">Vaga extra p/…</option>
+            ${authorizedUsers.map(([uid, u]) => `<option value="${uid}">${escapeHtml(u.name || u.email)}</option>`).join("")}
+          </select>
           <button class="btn-mini danger" data-action="delete" data-id="${id}">Excluir</button>
         </div>
       </td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 
   body.querySelectorAll("select[data-action='status']").forEach((sel) => {
     sel.addEventListener("change", async () => {
@@ -311,6 +323,20 @@ async function loadCampaigns() {
     btn.addEventListener("click", async () => {
       const c = campaignsCache[btn.dataset.id];
       await update(ref(db, `campaigns/${btn.dataset.id}`), { maxSlots: (c.maxSlots || 3) + 1 });
+      loadCampaigns();
+    });
+  });
+
+  body.querySelectorAll("select[data-action='extra-slot-user']").forEach((sel) => {
+    sel.addEventListener("change", async () => {
+      const uid = sel.value;
+      if (!uid) return;
+      const c = campaignsCache[sel.dataset.id];
+      const u = usersCache[uid];
+      await update(ref(db, `campaigns/${sel.dataset.id}`), {
+        maxSlots: (c.maxSlots || 3) + 1,
+        [`extraSlots/${uid}`]: u.name || u.email
+      });
       loadCampaigns();
     });
   });
