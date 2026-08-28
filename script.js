@@ -195,12 +195,20 @@ async function loadRaffleInfo() {
   ]);
 
   const raffle = raffleSnap.exists() ? raffleSnap.val() : {};
-  const entries = entriesSnap.exists() ? Object.values(entriesSnap.val()) : [];
+  const entriesObj = entriesSnap.exists() ? entriesSnap.val() : {};
+  const entries = Object.values(entriesObj);
   const isEligible = !!currentUserReferredBy;
+  const alreadyEntered = !!entriesObj[currentUser.uid];
 
   const participantsList = entries.length
     ? entries.map((u) => escapeHtml(u.name || u.email || "—")).join(", ")
     : "Ninguém participando ainda.";
+
+  const joinButton = alreadyEntered
+    ? `<span class="status-tag status-ativa" style="display:inline-block;margin-top:8px;">Você já está participando</span>`
+    : isEligible
+    ? `<button type="button" class="btn-mini success" id="raffleJoinBtn" style="margin-top:8px;">Participar do sorteio</button>`
+    : "";
 
   raffleInfoEl.innerHTML = `
     <div class="metric-card">
@@ -221,6 +229,7 @@ async function loadRaffleInfo() {
         ${isEligible ? "Elegível" : "Não elegível"}
       </span>
       ${!isEligible ? `<p style="font-size:11px;color:var(--text-muted);margin:8px 0 0;">Somente quem entrou pelo link de indicação participa.</p>` : ""}
+      ${joinButton}
     </div>
     <div class="metric-card" style="grid-column:1 / -1;">
       <span class="metric-label">QUEM ESTÁ PARTICIPANDO</span>
@@ -231,6 +240,23 @@ async function loadRaffleInfo() {
       <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${raffle.rules ? escapeHtml(raffle.rules) : "A definir pelo administrador."}</span>
     </div>
   `;
+
+  const joinBtn = document.getElementById("raffleJoinBtn");
+  if (joinBtn) {
+    joinBtn.addEventListener("click", async () => {
+      joinBtn.disabled = true;
+      try {
+        await set(ref(db, `raffleEntries/${currentUser.uid}`), {
+          name: currentUserName,
+          email: currentUser.email,
+          joinedAt: Date.now()
+        });
+        loadRaffleInfo();
+      } catch (err) {
+        joinBtn.disabled = false;
+      }
+    });
+  }
 }
 
 /* ---------- Publicações ---------- */
