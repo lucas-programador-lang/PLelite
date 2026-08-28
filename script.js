@@ -1,8 +1,8 @@
 // ===================================================================
 // PL ELITE — script.js
 // Usado apenas por index.html (dashboard).
-// Protege a rota (isAuthorized), busca campanhas e métricas no
-// Realtime Database e renderiza os cards.
+// Protege a rota (isAuthorized), busca campanhas, publicações e
+// métricas no Realtime Database e renderiza os cards.
 // ===================================================================
 
 import { auth, db } from "./firebase-config.js";
@@ -20,6 +20,9 @@ const metricRewards = document.getElementById("metricRewards");
 const metricBonusFund = document.getElementById("metricBonusFund");
 const metricActiveUsers = document.getElementById("metricActiveUsers");
 const metricActiveCampaigns = document.getElementById("metricActiveCampaigns");
+
+const postsGridEl = document.getElementById("postsGrid");
+const postsCountEl = document.getElementById("postsCount");
 
 const activeCampaignsEl = document.getElementById("activeCampaigns");
 const completedCampaignsEl = document.getElementById("completedCampaigns");
@@ -39,6 +42,15 @@ const STATUS_CLASSES = {
   concluida: "status-concluida",
   cancelada: "status-cancelada"
 };
+
+const POST_CATEGORY_LABELS = {
+  destaque: "Campanhas em Destaque",
+  oportunidades: "Oportunidades",
+  andamento: "Em Andamento",
+  concluidas: "Concluídas"
+};
+
+const GENERIC_WHATSAPP_URL = "https://wa.me/5568999503477?text=vim%20pelo%20o%20site%20tenho%20interesse%20em%20saber%20mais%20informa%C3%A7%C3%B5es%20sobre%20a%20plataforma";
 
 let currentUser = null;
 let currentUserName = "";
@@ -71,6 +83,7 @@ onAuthStateChanged(auth, async (user) => {
   userNameEl.textContent = currentUserName;
   show(dashboardContent);
   loadDashboard();
+  loadPosts();
   loadNotifications();
 });
 
@@ -164,6 +177,59 @@ function buildCampaignCard(c) {
       <a class="btn-whatsapp" href="${whatsappHref}" target="_blank" rel="noopener">Participar via WhatsApp</a>
     </div>
     ${isActive ? `<button type="button" class="btn-mini btn-block" data-action="send-proof" data-id="${c.id}" data-title="${escapeHtml(c.title || "")}">Enviar comprovante</button>` : ""}
+  `;
+
+  return card;
+}
+
+/* ---------- Publicações ---------- */
+
+async function loadPosts() {
+  const snap = await get(ref(db, "posts"));
+  const posts = snap.exists() ? snap.val() : {};
+  const entries = Object.entries(posts)
+    .map(([id, p]) => ({ id, ...p }))
+    .sort((a, b) => (b.date || 0) - (a.date || 0));
+
+  postsCountEl.textContent = `${entries.length} publicaç${entries.length === 1 ? "ão" : "ões"}`;
+  postsGridEl.innerHTML = "";
+
+  if (entries.length === 0) {
+    postsGridEl.innerHTML = `<p class="empty-state">Nenhuma publicação por enquanto.</p>`;
+    return;
+  }
+
+  entries.forEach((p) => postsGridEl.appendChild(buildPostCard(p)));
+}
+
+function buildPostCard(p) {
+  const card = document.createElement("article");
+  card.className = "campaign-card";
+
+  const images = p.images || (p.imageUrl ? [p.imageUrl] : []);
+  const categoryLabel = POST_CATEGORY_LABELS[p.category] || p.category || "PUBLICAÇÃO";
+  const date = p.date ? new Date(p.date).toLocaleDateString("pt-BR") : "";
+
+  card.innerHTML = `
+    <div class="campaign-top">
+      <div>
+        <span class="campaign-category">${escapeHtml(categoryLabel)}</span>
+        <h3 class="campaign-title">${escapeHtml(p.title || "Sem título")}</h3>
+      </div>
+    </div>
+
+    ${images[0] ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(p.title || "")}" style="width:100%;border-radius:var(--radius-md);display:block;">` : ""}
+
+    <p class="campaign-desc">${escapeHtml(p.description || "")}</p>
+
+    <div class="campaign-meta">
+      <span>${date}</span>
+    </div>
+
+    <div class="campaign-actions">
+      ${p.redirectLink ? `<a class="btn-whatsapp" href="${escapeHtml(p.redirectLink)}" target="_blank" rel="noopener">Ver plataforma</a>` : ""}
+      <a class="btn-whatsapp" href="${GENERIC_WHATSAPP_URL}" target="_blank" rel="noopener">Chamar no WhatsApp</a>
+    </div>
   `;
 
   return card;
