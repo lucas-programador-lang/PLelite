@@ -412,7 +412,7 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
   const newRef = push(ref(db, "posts"));
   await set(newRef, {
     title: document.getElementById("pTitle").value.trim(),
-    category: document.getElementById("pCategory").value,
+    category: document.getElementById("pCategory").value.trim(),
     description: document.getElementById("pDesc").value.trim(),
     images: linesToArray(document.getElementById("pImages").value),
     redirectLink: document.getElementById("pLink").value.trim(),
@@ -477,7 +477,7 @@ function openEditPostModal(id) {
   if (!p) return;
   editingPostId = id;
   document.getElementById("epTitle").value = p.title || "";
-  document.getElementById("epCategory").value = p.category || "destaque";
+  document.getElementById("epCategory").value = p.category || "";
   document.getElementById("epDesc").value = p.description || "";
   document.getElementById("epImages").value = (p.images || (p.imageUrl ? [p.imageUrl] : [])).join("\n");
   document.getElementById("epLink").value = p.redirectLink || "";
@@ -500,7 +500,7 @@ function bindEditPostModal() {
     try {
       await update(ref(db, `posts/${editingPostId}`), {
         title: document.getElementById("epTitle").value.trim(),
-        category: document.getElementById("epCategory").value,
+        category: document.getElementById("epCategory").value.trim(),
         description: document.getElementById("epDesc").value.trim(),
         images: linesToArray(document.getElementById("epImages").value),
         redirectLink: document.getElementById("epLink").value.trim()
