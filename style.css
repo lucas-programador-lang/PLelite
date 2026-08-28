@@ -658,10 +658,19 @@ button, input { font-family: inherit; }
    virar bloco próprio com espaçamento embaixo. */
 .btn-whatsapp-group {
   display: block;
-  margin: 0 0 28px;
+  margin: 0 0 12px;
   padding: 13px 0;
   font-size: 13.5px;
 }
+
+.btn-whatsapp-group.btn-whatsapp-ghost {
+  background: none;
+  border: 1px solid rgba(201, 162, 75, 0.3);
+  color: var(--gold);
+  margin: 0 0 28px;
+}
+
+.btn-whatsapp-group.btn-whatsapp-ghost:hover { border-color: var(--gold); color: var(--gold-bright); }
 
 .empty-state {
   padding: 28px;
