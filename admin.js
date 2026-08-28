@@ -270,6 +270,13 @@ async function loadCampaigns() {
           ).join("")}
         </select>
       </td>
+      <td>
+        <select class="btn-mini" data-action="result" data-id="${id}">
+          <option value="" ${!c.result ? "selected" : ""}>—</option>
+          <option value="sucesso" ${c.result === "sucesso" ? "selected" : ""}>🟢 Sucesso</option>
+          <option value="prejuizo" ${c.result === "prejuizo" ? "selected" : ""}>🔴 Prejuízo</option>
+        </select>
+      </td>
       <td>${formatDateRange(c.startDate, c.endDate)}</td>
       <td>
         <div class="row-actions">
@@ -284,6 +291,14 @@ async function loadCampaigns() {
   body.querySelectorAll("select[data-action='status']").forEach((sel) => {
     sel.addEventListener("change", async () => {
       await update(ref(db, `campaigns/${sel.dataset.id}`), { status: sel.value });
+    });
+  });
+
+  body.querySelectorAll("select[data-action='result']").forEach((sel) => {
+    sel.addEventListener("change", async () => {
+      await update(ref(db, `campaigns/${sel.dataset.id}`), { result: sel.value });
+      if (sel.value) await finalizeParticipants(sel.dataset.id);
+      loadHistory();
     });
   });
 
@@ -306,6 +321,27 @@ async function loadCampaigns() {
       loadCampaigns();
     });
   });
+}
+
+/**
+ * Marca como FINALIZADO (participantFinalized: true) todos os comprovantes
+ * aprovados vinculados a uma campanha, assim que o admin registra o
+ * resultado (sucesso ou prejuízo) dela.
+ */
+async function finalizeParticipants(campaignId) {
+  const snap = await get(ref(db, "validations"));
+  const validations = snap.exists() ? snap.val() : {};
+
+  const updates = {};
+  Object.entries(validations).forEach(([id, v]) => {
+    if (v.campaignId === campaignId && v.status === "aprovado") {
+      updates[`validations/${id}/participantFinalized`] = true;
+    }
+  });
+
+  if (Object.keys(updates).length > 0) {
+    await update(ref(db), updates);
+  }
 }
 
 /* ---------- Modal: editar campanha ---------- */
@@ -507,11 +543,19 @@ async function loadHistory() {
     const value = c && c.budget ? formatCurrency(c.budget) : "—";
     const timesParticipated = countByUser[v.userId] || 1;
 
-    const statusTag = v.status === "aprovado"
+    const statusTag = v.participantFinalized
+      ? `<span class="status-tag status-concluida">✅ FINALIZADO</span>`
+      : v.status === "aprovado"
       ? `<span class="status-tag status-ativa">Aprovado</span>`
       : v.status === "rejeitado"
       ? `<span class="status-tag status-cancelada">Rejeitado</span>`
       : `<span class="status-tag status-andamento">Pendente</span>`;
+
+    const resultTag = !c || !c.result
+      ? "—"
+      : c.result === "sucesso"
+      ? `<span class="status-tag status-ativa">🟢 Sucesso</span>`
+      : `<span class="status-tag status-cancelada">🔴 Prejuízo</span>`;
 
     return `
       <tr>
@@ -522,6 +566,7 @@ async function loadHistory() {
         <td>${v.startDate ? new Date(v.startDate).toLocaleDateString("pt-BR") : "—"}</td>
         <td>${v.endDate ? new Date(v.endDate).toLocaleDateString("pt-BR") : "—"}</td>
         <td>—</td>
+        <td>${resultTag}</td>
         <td>${statusTag}</td>
       </tr>`;
   }).join("");
