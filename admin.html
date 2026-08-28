@@ -38,6 +38,7 @@
         <button type="button" class="admin-tab" data-tab="campaigns">Campanhas</button>
         <button type="button" class="admin-tab" data-tab="posts">Publicações</button>
         <button type="button" class="admin-tab" data-tab="validations">Validações</button>
+        <button type="button" class="admin-tab" data-tab="history">Histórico</button>
         <button type="button" class="admin-tab" data-tab="raffle">Bonificação</button>
         <button type="button" class="admin-tab" data-tab="notifications">Avisos</button>
       </nav>
@@ -150,6 +151,24 @@
             <table class="data-table">
               <thead><tr><th>Usuário</th><th>Campanha</th><th>Período</th><th>Observações</th><th>Print</th><th>Status</th><th>Ações</th></tr></thead>
               <tbody id="validationsTableBody"><tr><td colspan="7">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- HISTÓRICO DE PARTICIPANTES -->
+      <section class="admin-section" id="tab-history">
+        <div class="panel-block">
+          <h3>Histórico de participantes</h3>
+          <p class="modal-subtitle" style="margin:-8px 0 18px;">Cada participação aprovada aparece em uma linha separada, mesmo que seja o mesmo usuário mais de uma vez.</p>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr><th>Usuário</th><th>Campanha</th><th>Participações</th><th>Valor</th><th>Entrada</th><th>Finalização</th><th>Saque</th><th>Status</th></tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <tr><td colspan="8">Carregando…</td></tr>
+              </tbody>
             </table>
           </div>
         </div>
