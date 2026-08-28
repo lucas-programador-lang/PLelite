@@ -21,6 +21,15 @@ import {
 /* ============================ FIREBASE ============================ */
 
 /**
+ * Captura o parâmetro ?ref= da URL de cadastro (link de indicação).
+ * Se a pessoa chegou em register.html vinda de um link com ?ref=CODIGO,
+ * isso fica salvo no perfil dela em /users/{uid}/referredBy.
+ */
+function getReferralCode() {
+  return new URLSearchParams(window.location.search).get("ref") || null;
+}
+
+/**
  * Cria a conta no Firebase Auth e grava o registro do usuário no
  * Realtime Database em /users/{uid}, já seguindo o modelo RBAC do
  * PL ELITE: role "user" e isAuthorized false até liberação do admin.
@@ -36,6 +45,7 @@ async function registerUser({ name, email, password }) {
     role: "user",
     isAuthorized: false,
     isBlocked: false,
+    referredBy: getReferralCode(),
     createdAt: Date.now()
   });
 
