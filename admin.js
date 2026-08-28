@@ -46,6 +46,7 @@ onAuthStateChanged(auth, async (user) => {
   loadCampaigns();
   loadPosts();
   loadValidations();
+  loadHistory();
   loadRaffle();
   loadNotifications();
 });
@@ -457,6 +458,7 @@ async function loadValidations() {
     btn.addEventListener("click", async () => {
       await update(ref(db, `validations/${btn.dataset.id}`), { status: "aprovado" });
       loadValidations();
+      loadHistory();
     });
   });
 
@@ -464,8 +466,65 @@ async function loadValidations() {
     btn.addEventListener("click", async () => {
       await update(ref(db, `validations/${btn.dataset.id}`), { status: "rejeitado" });
       loadValidations();
+      loadHistory();
     });
   });
+}
+
+/* ---------- Histórico de participantes ---------- */
+
+async function loadHistory() {
+  const [validationsSnap, usersSnap, campaignsSnap] = await Promise.all([
+    get(ref(db, "validations")),
+    get(ref(db, "users")),
+    get(ref(db, "campaigns"))
+  ]);
+
+  const validations = validationsSnap.exists() ? validationsSnap.val() : {};
+  const users = usersSnap.exists() ? usersSnap.val() : {};
+  const campaigns = campaignsSnap.exists() ? campaignsSnap.val() : {};
+  const body = document.getElementById("historyTableBody");
+
+  const entries = Object.values(validations)
+    .filter((v) => v.status === "aprovado")
+    .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+
+  if (entries.length === 0) {
+    body.innerHTML = `<tr><td colspan="8">Nenhuma participação aprovada ainda.</td></tr>`;
+    return;
+  }
+
+  // Conta quantas vezes cada userId aparece no histórico aprovado
+  const countByUser = {};
+  entries.forEach((v) => {
+    countByUser[v.userId] = (countByUser[v.userId] || 0) + 1;
+  });
+
+  body.innerHTML = entries.map((v) => {
+    const u = users[v.userId];
+    const c = campaigns[v.campaignId];
+    const userName = (u && u.name) || v.userName || "—";
+    const value = c && c.budget ? formatCurrency(c.budget) : "—";
+    const timesParticipated = countByUser[v.userId] || 1;
+
+    const statusTag = v.status === "aprovado"
+      ? `<span class="status-tag status-ativa">Aprovado</span>`
+      : v.status === "rejeitado"
+      ? `<span class="status-tag status-cancelada">Rejeitado</span>`
+      : `<span class="status-tag status-andamento">Pendente</span>`;
+
+    return `
+      <tr>
+        <td>${escapeHtml(userName)}</td>
+        <td>${escapeHtml(v.campaignTitle || "—")}</td>
+        <td>${timesParticipated}x</td>
+        <td>${value}</td>
+        <td>${v.startDate ? new Date(v.startDate).toLocaleDateString("pt-BR") : "—"}</td>
+        <td>${v.endDate ? new Date(v.endDate).toLocaleDateString("pt-BR") : "—"}</td>
+        <td>—</td>
+        <td>${statusTag}</td>
+      </tr>`;
+  }).join("");
 }
 
 /* ---------- Bonificação / sorteio ---------- */
