@@ -281,6 +281,32 @@
       </form>
     </div>
   </div>
+  <!-- Modal: editar publicação -->
+  <div class="modal-overlay is-hidden" id="editPostModal">
+    <div class="modal-card">
+      <h3>Editar publicação</h3>
+      <p class="form-feedback" id="editPostFeedback" role="alert" hidden></p>
+      <form class="modal-form" id="editPostForm">
+        <div class="field"><label for="epTitle">Título</label><input type="text" id="epTitle" required></div>
+        <div class="field">
+          <label for="epCategory">Categoria</label>
+          <select id="epCategory">
+            <option value="destaque">Campanhas em Destaque</option>
+            <option value="oportunidades">Oportunidades</option>
+            <option value="andamento">Em Andamento</option>
+            <option value="concluidas">Concluídas</option>
+          </select>
+        </div>
+        <div class="field"><label for="epDesc">Descrição</label><textarea id="epDesc"></textarea></div>
+        <div class="field"><label for="epImage">URL da mídia (foto)</label><input type="text" id="epImage"></div>
+        <div class="field"><label for="epLink">Link de redirecionamento</label><input type="text" id="epLink"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-mini" id="epCancel">Cancelar</button>
+          <button type="submit" class="btn-primary" id="epSubmit"><span class="btn-label">Salvar</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
 
 </div>
 
