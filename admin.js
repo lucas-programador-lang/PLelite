@@ -39,6 +39,8 @@ onAuthStateChanged(auth, async (user) => {
 
   initTabs();
   bindUserSearch();
+  bindEditUserModal();
+  bindEditCampaignModal();
   loadOverview();
   loadUsers();
   loadCampaigns();
@@ -92,6 +94,7 @@ async function loadOverview() {
 /* ---------- Usuários ---------- */
 
 let usersCache = {};
+let editingUid = null;
 
 function bindUserSearch() {
   document.getElementById("userSearch").addEventListener("input", (e) => {
@@ -136,6 +139,7 @@ function renderUsers(users) {
         <td>${u.role === "admin" ? "Administrador" : "Usuário"}</td>
         <td>
           <div class="row-actions">
+            <button class="btn-mini" data-action="edit" data-uid="${uid}">Editar</button>
             ${!u.isAuthorized
               ? `<button class="btn-mini success" data-action="authorize" data-uid="${uid}">Autorizar</button>`
               : `<button class="btn-mini" data-action="deauthorize" data-uid="${uid}">Remover autorização</button>`}
@@ -154,6 +158,10 @@ function renderUsers(users) {
 }
 
 async function handleUserAction(action, uid) {
+  if (action === "edit") {
+    openEditUserModal(uid);
+    return;
+  }
   if (action === "authorize") await update(ref(db, `users/${uid}`), { isAuthorized: true });
   if (action === "deauthorize") await update(ref(db, `users/${uid}`), { isAuthorized: false });
   if (action === "block") await update(ref(db, `users/${uid}`), { isBlocked: true });
@@ -165,7 +173,53 @@ async function handleUserAction(action, uid) {
   loadUsers();
 }
 
+/* ---------- Modal: editar usuário ---------- */
+
+const editUserModal = document.getElementById("editUserModal");
+const editUserForm = document.getElementById("editUserForm");
+const editUserFeedback = document.getElementById("editUserFeedback");
+
+function openEditUserModal(uid) {
+  const u = usersCache[uid];
+  if (!u) return;
+  editingUid = uid;
+  document.getElementById("euName").value = u.name || "";
+  document.getElementById("euEmail").value = u.email || "";
+  hideFeedback(editUserFeedback);
+  editUserModal.classList.remove("is-hidden");
+}
+
+function bindEditUserModal() {
+  document.getElementById("euCancel").addEventListener("click", () => {
+    editUserModal.classList.add("is-hidden");
+  });
+
+  editUserForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!editingUid) return;
+
+    const submitBtn = document.getElementById("euSubmit");
+    submitBtn.disabled = true;
+
+    try {
+      await update(ref(db, `users/${editingUid}`), {
+        name: document.getElementById("euName").value.trim(),
+        email: document.getElementById("euEmail").value.trim()
+      });
+      editUserModal.classList.add("is-hidden");
+      loadUsers();
+    } catch (err) {
+      showFeedback(editUserFeedback, "Não foi possível salvar. Tente novamente.");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+}
+
 /* ---------- Campanhas ---------- */
+
+let campaignsCache = {};
+let editingCampaignId = null;
 
 document.getElementById("campaignForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -195,9 +249,9 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
 
 async function loadCampaigns() {
   const snap = await get(ref(db, "campaigns"));
-  const campaigns = snap.exists() ? snap.val() : {};
+  campaignsCache = snap.exists() ? snap.val() : {};
   const body = document.getElementById("campaignsTableBody");
-  const entries = Object.entries(campaigns);
+  const entries = Object.entries(campaignsCache);
 
   if (entries.length === 0) {
     body.innerHTML = `<tr><td colspan="5">Nenhuma campanha cadastrada.</td></tr>`;
@@ -218,6 +272,7 @@ async function loadCampaigns() {
       <td>${formatDateRange(c.startDate, c.endDate)}</td>
       <td>
         <div class="row-actions">
+          <button class="btn-mini" data-action="edit-campaign" data-id="${id}">Editar</button>
           <button class="btn-mini" data-action="expand" data-id="${id}">+1 vaga</button>
           <button class="btn-mini danger" data-action="delete" data-id="${id}">Excluir</button>
         </div>
@@ -231,9 +286,13 @@ async function loadCampaigns() {
     });
   });
 
+  body.querySelectorAll("button[data-action='edit-campaign']").forEach((btn) => {
+    btn.addEventListener("click", () => openEditCampaignModal(btn.dataset.id));
+  });
+
   body.querySelectorAll("button[data-action='expand']").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const c = campaigns[btn.dataset.id];
+      const c = campaignsCache[btn.dataset.id];
       await update(ref(db, `campaigns/${btn.dataset.id}`), { maxSlots: (c.maxSlots || 3) + 1 });
       loadCampaigns();
     });
@@ -245,6 +304,63 @@ async function loadCampaigns() {
       await remove(ref(db, `campaigns/${btn.dataset.id}`));
       loadCampaigns();
     });
+  });
+}
+
+/* ---------- Modal: editar campanha ---------- */
+
+const editCampaignModal = document.getElementById("editCampaignModal");
+const editCampaignForm = document.getElementById("editCampaignForm");
+const editCampaignFeedback = document.getElementById("editCampaignFeedback");
+
+function openEditCampaignModal(id) {
+  const c = campaignsCache[id];
+  if (!c) return;
+  editingCampaignId = id;
+  document.getElementById("ecTitle").value = c.title || "";
+  document.getElementById("ecPlan").value = c.requiredPlan || "";
+  document.getElementById("ecDesc").value = c.description || "";
+  document.getElementById("ecBudget").value = c.budget || 0;
+  document.getElementById("ecMaxSlots").value = c.maxSlots || 3;
+  document.getElementById("ecStart").value = c.startDate || "";
+  document.getElementById("ecEnd").value = c.endDate || "";
+  document.getElementById("ecWhats").value = c.whatsappNumber || "";
+  document.getElementById("ecWhatsMsg").value = c.whatsappMessage || "";
+  hideFeedback(editCampaignFeedback);
+  editCampaignModal.classList.remove("is-hidden");
+}
+
+function bindEditCampaignModal() {
+  document.getElementById("ecCancel").addEventListener("click", () => {
+    editCampaignModal.classList.add("is-hidden");
+  });
+
+  editCampaignForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!editingCampaignId) return;
+
+    const submitBtn = document.getElementById("ecSubmit");
+    submitBtn.disabled = true;
+
+    try {
+      await update(ref(db, `campaigns/${editingCampaignId}`), {
+        title: document.getElementById("ecTitle").value.trim(),
+        requiredPlan: document.getElementById("ecPlan").value.trim(),
+        description: document.getElementById("ecDesc").value.trim(),
+        budget: Number(document.getElementById("ecBudget").value) || 0,
+        maxSlots: Number(document.getElementById("ecMaxSlots").value) || 3,
+        startDate: document.getElementById("ecStart").value,
+        endDate: document.getElementById("ecEnd").value,
+        whatsappNumber: document.getElementById("ecWhats").value.trim(),
+        whatsappMessage: document.getElementById("ecWhatsMsg").value.trim()
+      });
+      editCampaignModal.classList.add("is-hidden");
+      loadCampaigns();
+    } catch (err) {
+      showFeedback(editCampaignFeedback, "Não foi possível salvar. Tente novamente.");
+    } finally {
+      submitBtn.disabled = false;
+    }
   });
 }
 
@@ -475,6 +591,16 @@ function formatDateRange(start, end) {
   const s = start ? new Date(start).toLocaleDateString("pt-BR", opts) : "?";
   const e = end ? new Date(end).toLocaleDateString("pt-BR", opts) : "?";
   return `${s} — ${e}`;
+}
+
+function showFeedback(el, message) {
+  el.textContent = message;
+  el.hidden = false;
+}
+
+function hideFeedback(el) {
+  el.hidden = true;
+  el.textContent = "";
 }
 
 function escapeHtml(str) {
