@@ -41,6 +41,7 @@ onAuthStateChanged(auth, async (user) => {
   bindUserSearch();
   bindEditUserModal();
   bindEditCampaignModal();
+  bindEditPostModal();
   loadOverview();
   loadUsers();
   loadCampaigns();
@@ -426,9 +427,9 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
 
 async function loadPosts() {
   const snap = await get(ref(db, "posts"));
-  const posts = snap.exists() ? snap.val() : {};
+  postsCache = snap.exists() ? snap.val() : {};
   const body = document.getElementById("postsTableBody");
-  const entries = Object.entries(posts).sort((a, b) => (b[1].date || 0) - (a[1].date || 0));
+  const entries = Object.entries(postsCache).sort((a, b) => (b[1].date || 0) - (a[1].date || 0));
 
   if (entries.length === 0) {
     body.innerHTML = `<tr><td colspan="4">Nenhuma publicação ainda.</td></tr>`;
@@ -440,9 +441,18 @@ async function loadPosts() {
       <td>${escapeHtml(p.title || "—")}</td>
       <td>${escapeHtml(p.category || "—")}</td>
       <td>${p.date ? new Date(p.date).toLocaleDateString("pt-BR") : "—"}</td>
-      <td><button class="btn-mini danger" data-action="delete-post" data-id="${id}">Excluir</button></td>
+      <td>
+        <div class="row-actions">
+          <button class="btn-mini" data-action="edit-post" data-id="${id}">Editar</button>
+          <button class="btn-mini danger" data-action="delete-post" data-id="${id}">Excluir</button>
+        </div>
+      </td>
     </tr>
   `).join("");
+
+  body.querySelectorAll("button[data-action='edit-post']").forEach((btn) => {
+    btn.addEventListener("click", () => openEditPostModal(btn.dataset.id));
+  });
 
   body.querySelectorAll("button[data-action='delete-post']").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -450,6 +460,58 @@ async function loadPosts() {
       await remove(ref(db, `posts/${btn.dataset.id}`));
       loadPosts();
     });
+  });
+}
+
+/* ---------- Modal: editar publicação ---------- */
+
+let postsCache = {};
+let editingPostId = null;
+
+const editPostModal = document.getElementById("editPostModal");
+const editPostForm = document.getElementById("editPostForm");
+const editPostFeedback = document.getElementById("editPostFeedback");
+
+function openEditPostModal(id) {
+  const p = postsCache[id];
+  if (!p) return;
+  editingPostId = id;
+  document.getElementById("epTitle").value = p.title || "";
+  document.getElementById("epCategory").value = p.category || "destaque";
+  document.getElementById("epDesc").value = p.description || "";
+  document.getElementById("epImage").value = p.imageUrl || "";
+  document.getElementById("epLink").value = p.redirectLink || "";
+  hideFeedback(editPostFeedback);
+  editPostModal.classList.remove("is-hidden");
+}
+
+function bindEditPostModal() {
+  document.getElementById("epCancel").addEventListener("click", () => {
+    editPostModal.classList.add("is-hidden");
+  });
+
+  editPostForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!editingPostId) return;
+
+    const submitBtn = document.getElementById("epSubmit");
+    submitBtn.disabled = true;
+
+    try {
+      await update(ref(db, `posts/${editingPostId}`), {
+        title: document.getElementById("epTitle").value.trim(),
+        category: document.getElementById("epCategory").value,
+        description: document.getElementById("epDesc").value.trim(),
+        imageUrl: document.getElementById("epImage").value.trim(),
+        redirectLink: document.getElementById("epLink").value.trim()
+      });
+      editPostModal.classList.add("is-hidden");
+      loadPosts();
+    } catch (err) {
+      showFeedback(editPostFeedback, "Não foi possível salvar. Tente novamente.");
+    } finally {
+      submitBtn.disabled = false;
+    }
   });
 }
 
@@ -521,7 +583,8 @@ async function loadHistory() {
   const campaigns = campaignsSnap.exists() ? campaignsSnap.val() : {};
   const body = document.getElementById("historyTableBody");
 
-  const entries = Object.values(validations)
+  const entries = Object.entries(validations)
+    .map(([id, v]) => ({ id, ...v }))
     .filter((v) => v.status === "aprovado")
     .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
 
@@ -565,11 +628,20 @@ async function loadHistory() {
         <td>${value}</td>
         <td>${v.startDate ? new Date(v.startDate).toLocaleDateString("pt-BR") : "—"}</td>
         <td>${v.endDate ? new Date(v.endDate).toLocaleDateString("pt-BR") : "—"}</td>
-        <td>—</td>
+        <td>${v.withdrawalDone
+          ? `<span class="status-tag status-ativa">Sim</span>`
+          : `<button class="btn-mini" data-action="toggle-withdrawal" data-id="${v.id}">Marcar saque</button>`}</td>
         <td>${resultTag}</td>
         <td>${statusTag}</td>
       </tr>`;
   }).join("");
+
+  body.querySelectorAll("button[data-action='toggle-withdrawal']").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await update(ref(db, `validations/${btn.dataset.id}`), { withdrawalDone: true });
+      loadHistory();
+    });
+  });
 }
 
 /* ---------- Bonificação / sorteio ---------- */
