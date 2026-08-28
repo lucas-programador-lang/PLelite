@@ -116,12 +116,13 @@
             <div class="field"><label for="pTitle">Título</label><input type="text" id="pTitle" required></div>
             <div class="field">
               <label for="pCategory">Categoria</label>
-              <select id="pCategory">
-                <option value="destaque">Campanhas em Destaque</option>
-                <option value="oportunidades">Oportunidades</option>
-                <option value="andamento">Em Andamento</option>
-                <option value="concluidas">Concluídas</option>
-              </select>
+              <input type="text" id="pCategory" list="postCategoryOptions" placeholder="ex: Oportunidades" value="Oportunidades">
+              <datalist id="postCategoryOptions">
+                <option value="Campanhas em Destaque">
+                <option value="Oportunidades">
+                <option value="Em Andamento">
+                <option value="Concluídas">
+              </datalist>
             </div>
             <div class="field field-full"><label for="pDesc">Descrição</label><textarea id="pDesc"></textarea></div>
             <div class="field field-full"><label for="pImages">Fotos (uma URL por linha)</label><textarea id="pImages" placeholder="https://…&#10;https://…"></textarea></div>
@@ -290,12 +291,7 @@
         <div class="field"><label for="epTitle">Título</label><input type="text" id="epTitle" required></div>
         <div class="field">
           <label for="epCategory">Categoria</label>
-          <select id="epCategory">
-            <option value="destaque">Campanhas em Destaque</option>
-            <option value="oportunidades">Oportunidades</option>
-            <option value="andamento">Em Andamento</option>
-            <option value="concluidas">Concluídas</option>
-          </select>
+          <input type="text" id="epCategory" list="postCategoryOptions" placeholder="ex: Oportunidades">
         </div>
         <div class="field"><label for="epDesc">Descrição</label><textarea id="epDesc"></textarea></div>
         <div class="field"><label for="epImages">Fotos (uma URL por linha)</label><textarea id="epImages"></textarea></div>
