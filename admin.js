@@ -35,6 +35,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   userNameEl.textContent = userData.name || user.email;
+  currentAdminName = userData.name || user.email;
   adminContent.classList.remove("is-hidden");
 
   initTabs();
@@ -50,6 +51,7 @@ onAuthStateChanged(auth, async (user) => {
   loadHistory();
   loadRaffle();
   loadNotifications();
+  loadAuditLog();
 });
 
 /* ---------- Abas ---------- */
@@ -164,13 +166,28 @@ async function handleUserAction(action, uid) {
     openEditUserModal(uid);
     return;
   }
-  if (action === "authorize") await update(ref(db, `users/${uid}`), { isAuthorized: true });
-  if (action === "deauthorize") await update(ref(db, `users/${uid}`), { isAuthorized: false });
-  if (action === "block") await update(ref(db, `users/${uid}`), { isBlocked: true });
-  if (action === "unblock") await update(ref(db, `users/${uid}`), { isBlocked: false });
+  const u = usersCache[uid];
+  const label = (u && (u.name || u.email)) || uid;
+  if (action === "authorize") {
+    await update(ref(db, `users/${uid}`), { isAuthorized: true });
+    logAction(`Autorizou o usuário ${label}`);
+  }
+  if (action === "deauthorize") {
+    await update(ref(db, `users/${uid}`), { isAuthorized: false });
+    logAction(`Removeu a autorização de ${label}`);
+  }
+  if (action === "block") {
+    await update(ref(db, `users/${uid}`), { isBlocked: true });
+    logAction(`Bloqueou o usuário ${label}`);
+  }
+  if (action === "unblock") {
+    await update(ref(db, `users/${uid}`), { isBlocked: false });
+    logAction(`Desbloqueou o usuário ${label}`);
+  }
   if (action === "ban") {
     if (!confirm("Banir este usuário remove o registro dele da plataforma. Confirmar?")) return;
     await remove(ref(db, `users/${uid}`));
+    logAction(`Baniu o usuário ${label}`);
   }
   loadUsers();
 }
@@ -229,8 +246,9 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
   submitBtn.disabled = true;
 
   const newRef = push(ref(db, "campaigns"));
+  const titleValue = document.getElementById("cTitle").value.trim();
   await set(newRef, {
-    title: document.getElementById("cTitle").value.trim(),
+    title: titleValue,
     requiredPlan: document.getElementById("cPlan").value.trim(),
     description: document.getElementById("cDesc").value.trim(),
     budget: Number(document.getElementById("cBudget").value) || 0,
@@ -243,6 +261,7 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
     status: "ativa",
     createdAt: Date.now()
   });
+  logAction(`Criou a campanha "${titleValue}"`);
 
   e.target.reset();
   submitBtn.disabled = false;
@@ -316,14 +335,18 @@ async function loadCampaigns() {
 
   body.querySelectorAll("select[data-action='status']").forEach((sel) => {
     sel.addEventListener("change", async () => {
+      const c = campaignsCache[sel.dataset.id];
       await update(ref(db, `campaigns/${sel.dataset.id}`), { status: sel.value });
+      logAction(`Mudou status da campanha "${c.title}" para "${sel.value}"`);
     });
   });
 
   body.querySelectorAll("select[data-action='result']").forEach((sel) => {
     sel.addEventListener("change", async () => {
+      const c = campaignsCache[sel.dataset.id];
       await update(ref(db, `campaigns/${sel.dataset.id}`), { result: sel.value });
       if (sel.value) await finalizeParticipants(sel.dataset.id);
+      logAction(`Registrou resultado da campanha "${c.title}": ${sel.value || "—"}`);
       loadHistory();
     });
   });
@@ -376,7 +399,9 @@ async function loadCampaigns() {
   body.querySelectorAll("button[data-action='delete']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!confirm("Excluir esta campanha?")) return;
+      const c = campaignsCache[btn.dataset.id];
       await remove(ref(db, `campaigns/${btn.dataset.id}`));
+      logAction(`Excluiu a campanha "${c.title}"`);
       loadCampaigns();
     });
   });
@@ -439,8 +464,9 @@ function bindEditCampaignModal() {
     submitBtn.disabled = true;
 
     try {
+      const titleValue = document.getElementById("ecTitle").value.trim();
       await update(ref(db, `campaigns/${editingCampaignId}`), {
-        title: document.getElementById("ecTitle").value.trim(),
+        title: titleValue,
         requiredPlan: document.getElementById("ecPlan").value.trim(),
         description: document.getElementById("ecDesc").value.trim(),
         budget: Number(document.getElementById("ecBudget").value) || 0,
@@ -450,6 +476,7 @@ function bindEditCampaignModal() {
         whatsappNumber: document.getElementById("ecWhats").value.trim(),
         whatsappMessage: document.getElementById("ecWhatsMsg").value.trim()
       });
+      logAction(`Editou a campanha "${titleValue}"`);
       editCampaignModal.classList.add("is-hidden");
       loadCampaigns();
     } catch (err) {
@@ -603,8 +630,8 @@ async function loadValidations() {
         <td>${statusTag}</td>
         <td>
           <div class="row-actions">
-            <button class="btn-mini success" data-action="approve" data-id="${id}">Aprovar</button>
-            <button class="btn-mini danger" data-action="reject" data-id="${id}">Rejeitar</button>
+            <button class="btn-mini success" data-action="approve" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}">Aprovar</button>
+            <button class="btn-mini danger" data-action="reject" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}">Rejeitar</button>
           </div>
         </td>
       </tr>`;
@@ -613,6 +640,7 @@ async function loadValidations() {
   body.querySelectorAll("button[data-action='approve']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await update(ref(db, `validations/${btn.dataset.id}`), { status: "aprovado" });
+      logAction(`Aprovou o comprovante de ${btn.dataset.name}`);
       loadValidations();
       loadHistory();
     });
@@ -621,6 +649,7 @@ async function loadValidations() {
   body.querySelectorAll("button[data-action='reject']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await update(ref(db, `validations/${btn.dataset.id}`), { status: "rejeitado" });
+      logAction(`Rejeitou o comprovante de ${btn.dataset.name}`);
       loadValidations();
       loadHistory();
     });
@@ -768,15 +797,17 @@ document.getElementById("notifForm").addEventListener("submit", async (e) => {
   submitBtn.disabled = true;
 
   const target = document.getElementById("nTarget").value;
+  const titleValue = document.getElementById("nTitle").value.trim();
   const newRef = push(ref(db, "notifications"));
   await set(newRef, {
-    title: document.getElementById("nTitle").value.trim(),
+    title: titleValue,
     type: document.getElementById("nType").value,
     message: document.getElementById("nMessage").value.trim(),
     targetUid: target === "all" ? null : target,
     targetName: target === "all" ? "Todos" : (usersCache[target]?.name || usersCache[target]?.email || "—"),
     createdAt: Date.now()
   });
+  logAction(`Enviou o aviso "${titleValue}"`);
 
   e.target.reset();
   submitBtn.disabled = false;
@@ -802,7 +833,7 @@ async function loadNotifications() {
       <td>${TYPE_LABELS[n.type] || "—"}</td>
       <td>${escapeHtml(n.targetName || "Todos")}</td>
       <td>${n.createdAt ? new Date(n.createdAt).toLocaleDateString("pt-BR") : "—"}</td>
-      <td><button class="btn-mini danger" data-action="delete-notif" data-id="${id}">Excluir</button></td>
+      <td><button class="btn-mini danger" data-action="delete-notif" data-id="${id}" data-title="${escapeHtml(n.title || "—")}">Excluir</button></td>
     </tr>
   `).join("");
 
@@ -810,9 +841,46 @@ async function loadNotifications() {
     btn.addEventListener("click", async () => {
       if (!confirm("Excluir este aviso?")) return;
       await remove(ref(db, `notifications/${btn.dataset.id}`));
+      logAction(`Excluiu o aviso "${btn.dataset.title}"`);
       loadNotifications();
     });
   });
+}
+
+/* ---------- Auditoria ---------- */
+
+let currentAdminName = "";
+
+function logAction(action) {
+  push(ref(db, "auditLog"), {
+    adminUid: auth.currentUser.uid,
+    adminName: currentAdminName,
+    action,
+    timestamp: Date.now()
+  }).catch(() => {});
+}
+
+async function loadAuditLog() {
+  const snap = await get(ref(db, "auditLog"));
+  const log = snap.exists() ? snap.val() : {};
+  const body = document.getElementById("auditTableBody");
+
+  const entries = Object.values(log)
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+    .slice(0, 100);
+
+  if (entries.length === 0) {
+    body.innerHTML = `<tr><td colspan="3">Nenhuma ação registrada ainda.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = entries.map((e) => `
+    <tr>
+      <td>${e.timestamp ? new Date(e.timestamp).toLocaleString("pt-BR") : "—"}</td>
+      <td>${escapeHtml(e.adminName || "—")}</td>
+      <td>${escapeHtml(e.action || "—")}</td>
+    </tr>
+  `).join("");
 }
 
 /* ---------- Utilitários ---------- */
