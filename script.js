@@ -142,7 +142,7 @@ function buildCampaignCard(c) {
   const card = document.createElement("article");
   card.className = "campaign-card";
 
-  const filled = c.filledSlots || 0;
+  const filled = c.participants ? Object.keys(c.participants).length : (c.filledSlots || 0);
   const max = c.maxSlots || 3;
   const pct = Math.min(100, Math.round((filled / max) * 100));
   const isActive = c.status === "ativa" || c.status === "andamento";
