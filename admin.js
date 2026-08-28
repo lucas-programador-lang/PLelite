@@ -414,7 +414,7 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
     title: document.getElementById("pTitle").value.trim(),
     category: document.getElementById("pCategory").value,
     description: document.getElementById("pDesc").value.trim(),
-    imageUrl: document.getElementById("pImage").value.trim(),
+    images: linesToArray(document.getElementById("pImages").value),
     redirectLink: document.getElementById("pLink").value.trim(),
     date: Date.now(),
     status: "publicado"
@@ -479,7 +479,7 @@ function openEditPostModal(id) {
   document.getElementById("epTitle").value = p.title || "";
   document.getElementById("epCategory").value = p.category || "destaque";
   document.getElementById("epDesc").value = p.description || "";
-  document.getElementById("epImage").value = p.imageUrl || "";
+  document.getElementById("epImages").value = (p.images || (p.imageUrl ? [p.imageUrl] : [])).join("\n");
   document.getElementById("epLink").value = p.redirectLink || "";
   hideFeedback(editPostFeedback);
   editPostModal.classList.remove("is-hidden");
@@ -502,7 +502,7 @@ function bindEditPostModal() {
         title: document.getElementById("epTitle").value.trim(),
         category: document.getElementById("epCategory").value,
         description: document.getElementById("epDesc").value.trim(),
-        imageUrl: document.getElementById("epImage").value.trim(),
+        images: linesToArray(document.getElementById("epImages").value),
         redirectLink: document.getElementById("epLink").value.trim()
       });
       editPostModal.classList.add("is-hidden");
@@ -777,6 +777,13 @@ function showFeedback(el, message) {
 function hideFeedback(el) {
   el.hidden = true;
   el.textContent = "";
+}
+
+function linesToArray(text) {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }
 
 function escapeHtml(str) {
