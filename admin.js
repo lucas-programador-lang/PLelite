@@ -129,7 +129,9 @@ function renderUsers(users) {
   }
 
   body.innerHTML = entries.map(([uid, u]) => {
-    const statusTag = u.isBlocked
+    const statusTag = u.isBanned
+      ? `<span class="status-tag status-cancelada">Banido</span>`
+      : u.isBlocked
       ? `<span class="status-tag status-cancelada">Bloqueado</span>`
       : u.isAuthorized
       ? `<span class="status-tag status-ativa">Autorizado</span>`
@@ -150,7 +152,10 @@ function renderUsers(users) {
             ${!u.isBlocked
               ? `<button class="btn-mini" data-action="block" data-uid="${uid}">Bloquear</button>`
               : `<button class="btn-mini success" data-action="unblock" data-uid="${uid}">Desbloquear</button>`}
-            <button class="btn-mini danger" data-action="ban" data-uid="${uid}">Banir</button>
+            ${!u.isBanned
+              ? `<button class="btn-mini danger" data-action="ban" data-uid="${uid}">Banir</button>`
+              : ""}
+            <button class="btn-mini danger" data-action="delete-user" data-uid="${uid}">Excluir</button>
           </div>
         </td>
       </tr>`;
@@ -185,11 +190,48 @@ async function handleUserAction(action, uid) {
     logAction(`Desbloqueou o usuário ${label}`);
   }
   if (action === "ban") {
-    if (!confirm("Banir este usuário remove o registro dele da plataforma. Confirmar?")) return;
-    await remove(ref(db, `users/${uid}`));
+    if (!confirm(`Banir ${label}? A conta fica bloqueada e marcada como banida, mas o histórico é mantido.`)) return;
+    await update(ref(db, `users/${uid}`), { isBlocked: true, isBanned: true });
     logAction(`Baniu o usuário ${label}`);
   }
+  if (action === "delete-user") {
+    if (!confirm(`Excluir ${label} de vez? Isso remove o cadastro, os comprovantes enviados por ele e as participações em campanhas. Não dá pra desfazer.`)) return;
+    await deleteUserCompletely(uid, label);
+  }
   loadUsers();
+}
+
+/**
+ * Remove o registro do usuário e todo o rastro dele no banco:
+ * comprovantes enviados, participações e vagas extras em campanhas.
+ * Não apaga a conta de login no Firebase Auth (isso exige Admin SDK
+ * via backend/Worker, fora do alcance do client SDK).
+ */
+async function deleteUserCompletely(uid, label) {
+  const [validationsSnap, campaignsSnap] = await Promise.all([
+    get(ref(db, "validations")),
+    get(ref(db, "campaigns"))
+  ]);
+
+  const updates = {};
+
+  if (validationsSnap.exists()) {
+    Object.entries(validationsSnap.val()).forEach(([id, v]) => {
+      if (v.userId === uid) updates[`validations/${id}`] = null;
+    });
+  }
+
+  if (campaignsSnap.exists()) {
+    Object.keys(campaignsSnap.val()).forEach((campaignId) => {
+      updates[`campaigns/${campaignId}/participants/${uid}`] = null;
+      updates[`campaigns/${campaignId}/extraSlots/${uid}`] = null;
+    });
+  }
+
+  updates[`users/${uid}`] = null;
+
+  await update(ref(db), updates);
+  logAction(`Excluiu o usuário ${label} e todos os dados relacionados`);
 }
 
 /* ---------- Modal: editar usuário ---------- */
