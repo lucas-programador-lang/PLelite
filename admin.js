@@ -497,6 +497,7 @@ async function finalizeParticipants(campaignId) {
   Object.entries(validations).forEach(([id, v]) => {
     if (v.campaignId === campaignId && v.status === "aprovado") {
       updates[`validations/${id}/participantFinalized`] = true;
+      if (v.userId) updates[`users/${v.userId}/myValidations/${id}/participantFinalized`] = true;
     }
   });
 
@@ -712,8 +713,8 @@ async function loadValidations() {
         <td>${statusTag}</td>
         <td>
           <div class="row-actions">
-            <button class="btn-mini success" data-action="approve" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}">Aprovar</button>
-            <button class="btn-mini danger" data-action="reject" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}">Rejeitar</button>
+            <button class="btn-mini success" data-action="approve" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}" data-uid="${v.userId || ""}">Aprovar</button>
+            <button class="btn-mini danger" data-action="reject" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}" data-uid="${v.userId || ""}">Rejeitar</button>
           </div>
         </td>
       </tr>`;
@@ -722,6 +723,9 @@ async function loadValidations() {
   body.querySelectorAll("button[data-action='approve']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await update(ref(db, `validations/${btn.dataset.id}`), { status: "aprovado" });
+      if (btn.dataset.uid) {
+        await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { status: "aprovado" });
+      }
       logAction(`Aprovou o comprovante de ${btn.dataset.name}`);
       loadValidations();
       loadHistory();
@@ -731,6 +735,9 @@ async function loadValidations() {
   body.querySelectorAll("button[data-action='reject']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await update(ref(db, `validations/${btn.dataset.id}`), { status: "rejeitado" });
+      if (btn.dataset.uid) {
+        await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { status: "rejeitado" });
+      }
       logAction(`Rejeitou o comprovante de ${btn.dataset.name}`);
       loadValidations();
       loadHistory();
@@ -799,7 +806,7 @@ async function loadHistory() {
         <td>${v.endDate ? new Date(v.endDate).toLocaleDateString("pt-BR") : "—"}</td>
         <td>${v.withdrawalDone
           ? `<span class="status-tag status-ativa">Sim</span>`
-          : `<button class="btn-mini" data-action="toggle-withdrawal" data-id="${v.id}">Marcar saque</button>`}</td>
+          : `<button class="btn-mini" data-action="toggle-withdrawal" data-id="${v.id}" data-uid="${v.userId || ""}">Marcar saque</button>`}</td>
         <td>${resultTag}</td>
         <td>${statusTag}</td>
       </tr>`;
@@ -808,6 +815,9 @@ async function loadHistory() {
   body.querySelectorAll("button[data-action='toggle-withdrawal']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await update(ref(db, `validations/${btn.dataset.id}`), { withdrawalDone: true });
+      if (btn.dataset.uid) {
+        await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { withdrawalDone: true });
+      }
       loadHistory();
     });
   });
