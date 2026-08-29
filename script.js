@@ -307,13 +307,11 @@ document.getElementById("accountForm").addEventListener("submit", async (e) => {
 });
 
 async function loadMyHistory() {
-  const snap = await get(ref(db, "validations"));
+  const snap = await get(ref(db, `users/${currentUser.uid}/myValidations`));
   const validations = snap.exists() ? snap.val() : {};
   const listEl = document.getElementById("myHistoryList");
 
-  const mine = Object.values(validations)
-    .filter((v) => v.userId === currentUser.uid)
-    .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+  const mine = Object.values(validations).sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
 
   if (mine.length === 0) {
     listEl.innerHTML = `<p class="empty-state">Você ainda não enviou nenhum comprovante.</p>`;
@@ -438,15 +436,30 @@ proofForm.addEventListener("submit", async (e) => {
     const imageBase64 = await fileToBase64(file);
 
     const newRef = push(ref(db, "validations"));
+    const campaignTitleValue = proofCampaignTitle.textContent;
+    const startDateValue = document.getElementById("proofStart").value;
+    const endDateValue = document.getElementById("proofEnd").value;
+
     await set(newRef, {
       userId: currentUser.uid,
       userName: currentUserName,
       campaignId: proofCampaignId,
-      campaignTitle: proofCampaignTitle.textContent,
-      startDate: document.getElementById("proofStart").value,
-      endDate: document.getElementById("proofEnd").value,
+      campaignTitle: campaignTitleValue,
+      startDate: startDateValue,
+      endDate: endDateValue,
       notes: document.getElementById("proofNotes").value.trim(),
       imageBase64,
+      status: "pendente",
+      submittedAt: Date.now()
+    });
+
+    // Cópia mínima no próprio perfil do usuário — permite que ele veja seu
+    // histórico sem precisar de acesso de leitura ao node /validations
+    // inteiro (que é reservado ao admin nas Rules).
+    await set(ref(db, `users/${currentUser.uid}/myValidations/${newRef.key}`), {
+      campaignTitle: campaignTitleValue,
+      startDate: startDateValue,
+      endDate: endDateValue,
       status: "pendente",
       submittedAt: Date.now()
     });
