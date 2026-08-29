@@ -7,7 +7,7 @@
 
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { ref, get, push, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { ref, get, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const userNameEl = document.getElementById("userName");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -89,6 +89,7 @@ onAuthStateChanged(auth, async (user) => {
   loadPosts();
   loadRaffleInfo();
   loadNotifications();
+  loadMyAccount(userData);
 });
 
 function show(panel) {
@@ -269,6 +270,76 @@ async function loadRaffleInfo() {
       }
     });
   }
+}
+
+/* ---------- Minha Conta ---------- */
+
+function loadMyAccount(userData) {
+  document.getElementById("accName").value = userData.name || "";
+  document.getElementById("accEmail").value = userData.email || "";
+  loadMyHistory();
+}
+
+document.getElementById("accountForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const feedback = document.getElementById("accountFeedback");
+  const submitBtn = document.getElementById("accountSubmit");
+  feedback.hidden = true;
+  submitBtn.disabled = true;
+
+  const newName = document.getElementById("accName").value.trim();
+  const newEmail = document.getElementById("accEmail").value.trim();
+
+  try {
+    await update(ref(db, `users/${currentUser.uid}`), { name: newName, email: newEmail });
+    currentUserName = newName;
+    userNameEl.textContent = newName;
+    feedback.textContent = "Dados atualizados!";
+    feedback.hidden = false;
+    feedback.classList.add("is-success");
+  } catch (err) {
+    feedback.textContent = "Não foi possível salvar. Tente novamente.";
+    feedback.hidden = false;
+    feedback.classList.remove("is-success");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+async function loadMyHistory() {
+  const snap = await get(ref(db, "validations"));
+  const validations = snap.exists() ? snap.val() : {};
+  const listEl = document.getElementById("myHistoryList");
+
+  const mine = Object.values(validations)
+    .filter((v) => v.userId === currentUser.uid)
+    .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+
+  if (mine.length === 0) {
+    listEl.innerHTML = `<p class="empty-state">Você ainda não enviou nenhum comprovante.</p>`;
+    return;
+  }
+
+  const STATUS_LABELS = {
+    aprovado: `<span class="status-tag status-ativa">Aprovado</span>`,
+    rejeitado: `<span class="status-tag status-cancelada">Rejeitado</span>`,
+    pendente: `<span class="status-tag status-andamento">Pendente</span>`
+  };
+
+  listEl.innerHTML = mine.map((v) => `
+    <div class="campaign-card" style="margin-bottom:10px;">
+      <div class="campaign-top">
+        <h3 class="campaign-title" style="font-size:15px;">${escapeHtml(v.campaignTitle || "—")}</h3>
+        ${v.participantFinalized
+          ? `<span class="status-tag status-concluida">✅ FINALIZADO</span>`
+          : (STATUS_LABELS[v.status] || STATUS_LABELS.pendente)}
+      </div>
+      <div class="campaign-meta">
+        <span>${v.startDate ? new Date(v.startDate).toLocaleDateString("pt-BR") : "—"} — ${v.endDate ? new Date(v.endDate).toLocaleDateString("pt-BR") : "—"}</span>
+        <span>${v.withdrawalDone ? "Saque feito" : "Saque pendente"}</span>
+      </div>
+    </div>
+  `).join("");
 }
 
 /* ---------- Publicações ---------- */
