@@ -34,6 +34,7 @@
 
       <nav class="admin-tabs" role="tablist">
         <button type="button" class="admin-tab is-active" data-tab="overview">Visão geral</button>
+        <button type="button" class="admin-tab" data-tab="financeiro">Financeiro</button>
         <button type="button" class="admin-tab" data-tab="users">Usuários</button>
         <button type="button" class="admin-tab" data-tab="campaigns">Campanhas</button>
         <button type="button" class="admin-tab" data-tab="posts">Publicações</button>
@@ -52,6 +53,21 @@
           <div class="metric-card"><span class="metric-label">USUÁRIOS ATIVOS</span><span class="metric-value" id="ovActiveUsers">—</span></div>
           <div class="metric-card"><span class="metric-label">TAXA DE CONCLUSÃO</span><span class="metric-value" id="ovCompletionRate">—</span></div>
         </section>
+      </section>
+
+      <!-- FINANCEIRO -->
+      <section class="admin-section" id="tab-financeiro">
+        <div class="panel-block">
+          <h3>Controle financeiro</h3>
+          <section class="metrics-grid">
+            <div class="metric-card"><span class="metric-label">TOTAL PAGO EM PATROCÍNIOS</span><span class="metric-value" id="fTotalPago">—</span></div>
+            <div class="metric-card"><span class="metric-label">TOTAL ARRECADADO P/ SORTEIOS</span><span class="metric-value" id="fTotalSorteios">—</span></div>
+            <div class="metric-card"><span class="metric-label">TOTAL DE PARTICIPANTES</span><span class="metric-value" id="fTotalParticipantes">—</span></div>
+            <div class="metric-card"><span class="metric-label">TOTAL DE OPORTUNIDADES</span><span class="metric-value" id="fTotalOportunidades">—</span></div>
+            <div class="metric-card"><span class="metric-label">OPORTUNIDADES FINALIZADAS</span><span class="metric-value" id="fFinalizadas">—</span></div>
+            <div class="metric-card"><span class="metric-label">OPORTUNIDADES EM ANDAMENTO</span><span class="metric-value" id="fAndamento">—</span></div>
+          </section>
+        </div>
       </section>
 
       <!-- USUÁRIOS -->
