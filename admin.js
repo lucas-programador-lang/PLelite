@@ -544,7 +544,7 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
     images: linesToArray(document.getElementById("pImages").value),
     redirectLink: document.getElementById("pLink").value.trim(),
     date: Date.now(),
-    status: "publicado"
+    status: document.getElementById("pStatus").value
   });
 
   e.target.reset();
@@ -559,14 +559,17 @@ async function loadPosts() {
   const entries = Object.entries(postsCache).sort((a, b) => (b[1].date || 0) - (a[1].date || 0));
 
   if (entries.length === 0) {
-    body.innerHTML = `<tr><td colspan="4">Nenhuma publicação ainda.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5">Nenhuma publicação ainda.</td></tr>`;
     return;
   }
+
+  const STATUS_LABELS = { publicado: "Publicado", rascunho: "Rascunho", arquivado: "Arquivado" };
 
   body.innerHTML = entries.map(([id, p]) => `
     <tr>
       <td>${escapeHtml(p.title || "—")}</td>
       <td>${escapeHtml(p.category || "—")}</td>
+      <td>${escapeHtml(STATUS_LABELS[p.status] || p.status || "Publicado")}</td>
       <td>${p.date ? new Date(p.date).toLocaleDateString("pt-BR") : "—"}</td>
       <td>
         <div class="row-actions">
@@ -608,6 +611,7 @@ function openEditPostModal(id) {
   document.getElementById("epDesc").value = p.description || "";
   document.getElementById("epImages").value = (p.images || (p.imageUrl ? [p.imageUrl] : [])).join("\n");
   document.getElementById("epLink").value = p.redirectLink || "";
+  document.getElementById("epStatus").value = p.status || "publicado";
   hideFeedback(editPostFeedback);
   editPostModal.classList.remove("is-hidden");
 }
@@ -630,7 +634,8 @@ function bindEditPostModal() {
         category: document.getElementById("epCategory").value.trim(),
         description: document.getElementById("epDesc").value.trim(),
         images: linesToArray(document.getElementById("epImages").value),
-        redirectLink: document.getElementById("epLink").value.trim()
+        redirectLink: document.getElementById("epLink").value.trim(),
+        status: document.getElementById("epStatus").value
       });
       editPostModal.classList.add("is-hidden");
       loadPosts();
