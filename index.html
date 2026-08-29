@@ -29,18 +29,20 @@
     <div id="notifList"><p class="notif-empty">Carregando…</p></div>
   </div>
 
-  <nav class="site-menu">
-    <a href="#top">🏠 Início</a>
-    <a href="#publicacoesSection">📢 Publicações</a>
-    <a href="#patrociniosSection">💰 Patrocínios</a>
-    <a href="#andamentosSection">📊 Andamentos</a>
-    <a href="#raffleSection">🎁 Sorteios</a>
-    <a href="#minhaContaSection">👤 Minha Conta</a>
-    <a href="https://chat.whatsapp.com/EWHtx2C2kGXERf4ZpMyXvS?s=cl&amp;p=a&amp;mlu=4" target="_blank" rel="noopener">👥 Grupo</a>
-    <a href="admin.html">🔐 Área Administrativa</a>
-  </nav>
+  <div class="app-body">
 
-  <main class="app-main" id="top">
+    <nav class="sidebar" id="sidebar">
+      <button type="button" class="sidebar-link is-active" data-view="inicio">🏠 Início</button>
+      <button type="button" class="sidebar-link" data-view="publicacoes">📢 Publicações</button>
+      <button type="button" class="sidebar-link" data-view="patrocinios">💰 Patrocínios</button>
+      <button type="button" class="sidebar-link" data-view="andamentos">📊 Andamentos</button>
+      <button type="button" class="sidebar-link" data-view="sorteios">🎁 Sorteios</button>
+      <button type="button" class="sidebar-link" data-view="minha-conta">👤 Minha Conta</button>
+      <a class="sidebar-link" href="https://chat.whatsapp.com/EWHtx2C2kGXERf4ZpMyXvS?s=cl&amp;p=a&amp;mlu=4" target="_blank" rel="noopener">👥 Grupo</a>
+      <a class="sidebar-link" href="admin.html">🔐 Área Administrativa</a>
+    </nav>
+
+    <main class="app-main" id="top">
 
     <!-- Tela exibida enquanto a conta aguarda autorização do admin -->
     <div class="gate-screen is-hidden" id="gatePending">
@@ -57,107 +59,121 @@
     <!-- Conteúdo do dashboard (liberado só após isAuthorized) -->
     <div id="dashboardContent" class="is-hidden">
 
-      <a class="btn-whatsapp btn-whatsapp-group" href="https://chat.whatsapp.com/EWHtx2C2kGXERf4ZpMyXvS?s=cl&amp;p=a&amp;mlu=4" target="_blank" rel="noopener">
-        👥 ENTRAR NO GRUPO DO WHATSAPP
-      </a>
+      <div class="app-view is-active" id="view-inicio">
+        <a class="btn-whatsapp btn-whatsapp-group" href="https://chat.whatsapp.com/EWHtx2C2kGXERf4ZpMyXvS?s=cl&amp;p=a&amp;mlu=4" target="_blank" rel="noopener">
+          👥 ENTRAR NO GRUPO DO WHATSAPP
+        </a>
 
-      <a class="btn-whatsapp btn-whatsapp-group btn-whatsapp-ghost" href="https://wa.me/5568999503477?text=vim%20pelo%20o%20site%20tenho%20interesse%20em%20saber%20mais%20informa%C3%A7%C3%B5es%20sobre%20a%20plataforma" target="_blank" rel="noopener">
-        💬 Chame no WhatsApp para receber o link e mais informações
-      </a>
+        <a class="btn-whatsapp btn-whatsapp-group btn-whatsapp-ghost" href="https://wa.me/5568999503477?text=vim%20pelo%20o%20site%20tenho%20interesse%20em%20saber%20mais%20informa%C3%A7%C3%B5es%20sobre%20a%20plataforma" target="_blank" rel="noopener">
+          💬 Chame no WhatsApp para receber o link e mais informações
+        </a>
 
-      <section class="metrics-grid" id="metricsGrid">
-        <div class="metric-card">
-          <span class="metric-label">TOTAL PAGO EM PATROCÍNIOS</span>
-          <span class="metric-value" id="metricRewards">—</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">TOTAL ARRECADADO P/ SORTEIOS</span>
-          <span class="metric-value" id="metricBonusFund">—</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">USUÁRIOS PARTICIPANTES</span>
-          <span class="metric-value" id="metricActiveUsers">—</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">CAMPANHAS ATIVAS</span>
-          <span class="metric-value" id="metricActiveCampaigns">—</span>
-        </div>
-      </section>
+        <section class="metrics-grid" id="metricsGrid">
+          <div class="metric-card">
+            <span class="metric-label">TOTAL PAGO EM PATROCÍNIOS</span>
+            <span class="metric-value" id="metricRewards">—</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">TOTAL ARRECADADO P/ SORTEIOS</span>
+            <span class="metric-value" id="metricBonusFund">—</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">USUÁRIOS PARTICIPANTES</span>
+            <span class="metric-value" id="metricActiveUsers">—</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">CAMPANHAS ATIVAS</span>
+            <span class="metric-value" id="metricActiveCampaigns">—</span>
+          </div>
+        </section>
+      </div>
 
-      <section class="campaign-section" id="raffleSection">
-        <div class="section-heading">
-          <h2>🎁 Sorteio</h2>
-        </div>
-        <div class="metrics-grid" id="raffleInfo">
-          <p class="empty-state">Carregando…</p>
-        </div>
-      </section>
+      <div class="app-view" id="view-publicacoes">
+        <section class="campaign-section" id="publicacoesSection">
+          <div class="section-heading">
+            <h2>📢 Publicações</h2>
+            <span id="postsCount"></span>
+          </div>
+          <div class="campaign-grid" id="postsGrid">
+            <p class="empty-state">Carregando publicações…</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="campaign-section" id="publicacoesSection">
-        <div class="section-heading">
-          <h2>Publicações</h2>
-          <span id="postsCount"></span>
-        </div>
-        <div class="campaign-grid" id="postsGrid">
-          <p class="empty-state">Carregando publicações…</p>
-        </div>
-      </section>
+      <div class="app-view" id="view-patrocinios">
+        <section class="campaign-section" id="patrociniosSection">
+          <div class="section-heading">
+            <h2>Campanhas disponíveis e ativas</h2>
+            <span id="activeCount"></span>
+          </div>
+          <div class="campaign-grid" id="activeCampaigns">
+            <p class="empty-state">Carregando campanhas…</p>
+          </div>
+        </section>
 
-      <section class="campaign-section" id="patrociniosSection">
-        <div class="section-heading">
-          <h2>Campanhas disponíveis e ativas</h2>
-          <span id="activeCount"></span>
-        </div>
-        <div class="campaign-grid" id="activeCampaigns">
-          <p class="empty-state">Carregando campanhas…</p>
-        </div>
-      </section>
+        <section class="campaign-section">
+          <div class="section-heading">
+            <h2>Campanhas concluídas</h2>
+            <span id="completedCount"></span>
+          </div>
+          <div class="campaign-grid" id="completedCampaigns">
+            <p class="empty-state">Carregando campanhas…</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="campaign-section" id="andamentosSection">
-        <div class="section-heading">
-          <h2>📊 Andamentos</h2>
-          <span id="andamentoCount"></span>
-        </div>
-        <div class="campaign-grid" id="andamentoCampaigns">
-          <p class="empty-state">Carregando campanhas…</p>
-        </div>
-      </section>
+      <div class="app-view" id="view-andamentos">
+        <section class="campaign-section" id="andamentosSection">
+          <div class="section-heading">
+            <h2>📊 Andamentos</h2>
+            <span id="andamentoCount"></span>
+          </div>
+          <div class="campaign-grid" id="andamentoCampaigns">
+            <p class="empty-state">Carregando campanhas…</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="campaign-section">
-        <div class="section-heading">
-          <h2>Campanhas concluídas</h2>
-          <span id="completedCount"></span>
-        </div>
-        <div class="campaign-grid" id="completedCampaigns">
-          <p class="empty-state">Carregando campanhas…</p>
-        </div>
-      </section>
+      <div class="app-view" id="view-sorteios">
+        <section class="campaign-section" id="raffleSection">
+          <div class="section-heading">
+            <h2>🎁 Sorteio</h2>
+          </div>
+          <div class="metrics-grid" id="raffleInfo">
+            <p class="empty-state">Carregando…</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="campaign-section" id="minhaContaSection">
-        <div class="section-heading">
-          <h2>👤 Minha Conta</h2>
-        </div>
+      <div class="app-view" id="view-minha-conta">
+        <section class="campaign-section" id="minhaContaSection">
+          <div class="section-heading">
+            <h2>👤 Minha Conta</h2>
+          </div>
 
-        <div class="panel-block">
-          <h3>Meus dados</h3>
-          <p class="modal-subtitle" style="margin:-8px 0 18px;">O e-mail aqui é só o registro de exibição — não altera o e-mail de login da sua conta.</p>
-          <p class="form-feedback" id="accountFeedback" role="alert" hidden></p>
-          <form class="modal-form" id="accountForm" style="max-width:420px;">
-            <div class="field"><label for="accName">Nome</label><input type="text" id="accName" required></div>
-            <div class="field"><label for="accEmail">E-mail (exibição)</label><input type="email" id="accEmail" required></div>
-            <button type="submit" class="btn-primary" id="accountSubmit" style="max-width:200px;"><span class="btn-label">Salvar</span></button>
-          </form>
-        </div>
+          <div class="panel-block">
+            <h3>Meus dados</h3>
+            <p class="modal-subtitle" style="margin:-8px 0 18px;">O e-mail aqui é só o registro de exibição — não altera o e-mail de login da sua conta.</p>
+            <p class="form-feedback" id="accountFeedback" role="alert" hidden></p>
+            <form class="modal-form" id="accountForm" style="max-width:420px;">
+              <div class="field"><label for="accName">Nome</label><input type="text" id="accName" required></div>
+              <div class="field"><label for="accEmail">E-mail (exibição)</label><input type="email" id="accEmail" required></div>
+              <button type="submit" class="btn-primary" id="accountSubmit" style="max-width:200px;"><span class="btn-label">Salvar</span></button>
+            </form>
+          </div>
 
-        <div class="panel-block">
-          <h3>Minhas participações</h3>
-          <div id="myHistoryList"><p class="empty-state">Carregando…</p></div>
-        </div>
-      </section>
+          <div class="panel-block">
+            <h3>Minhas participações</h3>
+            <div id="myHistoryList"><p class="empty-state">Carregando…</p></div>
+          </div>
+        </section>
+      </div>
 
     </div>
 
   </main>
+
+  </div>
 
   <!-- Modal de envio de comprovante -->
   <div class="modal-overlay is-hidden" id="proofModal">
