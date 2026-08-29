@@ -202,9 +202,10 @@ function buildCampaignCard(c) {
 /* ---------- Sorteio ---------- */
 
 async function loadRaffleInfo() {
-  const [raffleSnap, entriesSnap] = await Promise.all([
+  const [raffleSnap, entriesSnap, campaignsSnap] = await Promise.all([
     get(ref(db, "raffle")),
-    get(ref(db, "raffleEntries"))
+    get(ref(db, "raffleEntries")),
+    get(ref(db, "campaigns"))
   ]);
 
   const raffle = raffleSnap.exists() ? raffleSnap.val() : {};
@@ -213,9 +214,20 @@ async function loadRaffleInfo() {
   const isEligible = !!currentUserReferredBy;
   const alreadyEntered = !!entriesObj[currentUser.uid];
 
+  // "Quem participou do sorteio" (raffleEntries) é diferente de "quem foi
+  // patrocinado" (participants em qualquer campaign) — dados distintos.
+  const campaigns = campaignsSnap.exists() ? Object.values(campaignsSnap.val()) : [];
+  const patrocinadosSet = new Set();
+  campaigns.forEach((c) => {
+    if (c.participants) Object.values(c.participants).forEach((name) => patrocinadosSet.add(name));
+  });
+  const patrocinadosList = patrocinadosSet.size
+    ? [...patrocinadosSet].map((n) => escapeHtml(n)).join(", ")
+    : "Ninguém patrocinado ainda.";
+
   const participantsList = entries.length
     ? entries.map((u) => escapeHtml(u.name || u.email || "—")).join(", ")
-    : "Ninguém participando ainda.";
+    : "Ninguém participando do sorteio ainda.";
 
   const joinButton = alreadyEntered
     ? `<span class="status-tag status-ativa" style="display:inline-block;margin-top:8px;">Você já está participando</span>`
@@ -245,8 +257,12 @@ async function loadRaffleInfo() {
       ${joinButton}
     </div>
     <div class="metric-card" style="grid-column:1 / -1;">
-      <span class="metric-label">QUEM ESTÁ PARTICIPANDO</span>
+      <span class="metric-label">QUEM PARTICIPOU DO SORTEIO</span>
       <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${participantsList}</span>
+    </div>
+    <div class="metric-card" style="grid-column:1 / -1;">
+      <span class="metric-label">QUEM FOI PATROCINADO</span>
+      <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${patrocinadosList}</span>
     </div>
     <div class="metric-card" style="grid-column:1 / -1;">
       <span class="metric-label">REGRAS</span>
