@@ -44,6 +44,7 @@ onAuthStateChanged(auth, async (user) => {
   bindEditCampaignModal();
   bindEditPostModal();
   loadOverview();
+  loadFinanceiro();
   await loadUsers();
   loadCampaigns();
   loadPosts();
@@ -93,6 +94,40 @@ async function loadOverview() {
   document.getElementById("ovCompletionRate").textContent = `${successRate}%`;
 
   if (campaignsSnap.exists()) window.__campaigns = campaignsSnap.val();
+}
+
+/**
+ * Dashboard financeiro separado, com os números que o briefing pede:
+ * total pago em patrocínios, total arrecadado pra sorteios, total de
+ * participantes, total de oportunidades e a contagem por status.
+ */
+async function loadFinanceiro() {
+  const [campaignsSnap, raffleSnap] = await Promise.all([
+    get(ref(db, "campaigns")),
+    get(ref(db, "raffle"))
+  ]);
+
+  const campaigns = campaignsSnap.exists() ? Object.values(campaignsSnap.val()) : [];
+  const raffle = raffleSnap.exists() ? raffleSnap.val() : {};
+
+  const totalPago = campaigns
+    .filter((c) => c.result)
+    .reduce((sum, c) => sum + (c.budget || 0), 0);
+
+  const participantUids = new Set();
+  campaigns.forEach((c) => {
+    if (c.participants) Object.keys(c.participants).forEach((uid) => participantUids.add(uid));
+  });
+
+  const finalizadas = campaigns.filter((c) => c.status === "concluida" || c.status === "cancelada").length;
+  const andamento = campaigns.filter((c) => c.status === "ativa" || c.status === "andamento").length;
+
+  document.getElementById("fTotalPago").textContent = formatCurrency(totalPago);
+  document.getElementById("fTotalSorteios").textContent = formatCurrency(raffle.fund || 0);
+  document.getElementById("fTotalParticipantes").textContent = participantUids.size;
+  document.getElementById("fTotalOportunidades").textContent = campaigns.length;
+  document.getElementById("fFinalizadas").textContent = finalizadas;
+  document.getElementById("fAndamento").textContent = andamento;
 }
 
 /* ---------- Usuários ---------- */
