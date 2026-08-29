@@ -99,22 +99,34 @@ function show(panel) {
 /* ---------- Carregamento dos dados ---------- */
 
 async function loadDashboard() {
-  const [campaignsSnap, metricsSnap, usersSnap] = await Promise.all([
+  const [campaignsSnap, metricsSnap] = await Promise.all([
     get(ref(db, "campaigns")),
-    get(ref(db, "metrics")),
-    get(ref(db, "users"))
+    get(ref(db, "metrics"))
   ]);
 
-  renderMetrics(metricsSnap.exists() ? metricsSnap.val() : {}, usersSnap.exists() ? usersSnap.val() : {});
+  renderMetrics(metricsSnap.exists() ? metricsSnap.val() : {}, campaignsSnap.exists() ? campaignsSnap.val() : {});
   renderCampaigns(campaignsSnap.exists() ? campaignsSnap.val() : {});
 }
 
-function renderMetrics(metrics, users) {
-  const activeUsers = Object.values(users).filter((u) => u.isAuthorized && !u.isBlocked).length;
+function renderMetrics(metrics, campaignsObj) {
+  const campaigns = Object.values(campaignsObj);
 
-  metricRewards.textContent = formatCurrency(metrics.totalRewardsDistributed || 0);
+  // Total pago em patrocínios: soma do orçamento das campanhas já finalizadas
+  // (com resultado registrado, 🟢 ou 🔴) — dinheiro que já foi de fato pago.
+  const totalPago = campaigns
+    .filter((c) => c.result)
+    .reduce((sum, c) => sum + (c.budget || 0), 0);
+
+  // Usuários participantes: contagem de pessoas distintas presentes em
+  // "participants" de qualquer campanha (dado real, não estimado).
+  const participantUids = new Set();
+  campaigns.forEach((c) => {
+    if (c.participants) Object.keys(c.participants).forEach((uid) => participantUids.add(uid));
+  });
+
+  metricRewards.textContent = formatCurrency(totalPago);
   metricBonusFund.textContent = formatCurrency(metrics.bonusFund || 0);
-  metricActiveUsers.textContent = activeUsers;
+  metricActiveUsers.textContent = participantUids.size;
 }
 
 function renderCampaigns(campaignsObj) {
