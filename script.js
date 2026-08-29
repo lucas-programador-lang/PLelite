@@ -278,6 +278,7 @@ async function loadPosts() {
   const posts = snap.exists() ? snap.val() : {};
   const entries = Object.entries(posts)
     .map(([id, p]) => ({ id, ...p }))
+    .filter((p) => !p.status || p.status === "publicado")
     .sort((a, b) => (b.date || 0) - (a.date || 0));
 
   postsCountEl.textContent = `${entries.length} publicaç${entries.length === 1 ? "ão" : "ões"}`;
