@@ -186,6 +186,7 @@ function buildCampaignCard(c) {
     </div>
 
     <p class="campaign-desc">${escapeHtml(c.description || "")}</p>
+    ${c.machines ? `<p style="font-size:11.5px;color:var(--text-muted);margin:-4px 0 0;">🛠️ Máquinas/planos: ${escapeHtml(c.machines)}</p>` : ""}
 
     <div class="campaign-progress">
       <div class="campaign-progress-bar" style="width:${pct}%"></div>
