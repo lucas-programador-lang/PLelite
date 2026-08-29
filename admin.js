@@ -327,6 +327,7 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
   await set(newRef, {
     title: titleValue,
     requiredPlan: document.getElementById("cPlan").value.trim(),
+    machines: document.getElementById("cMachines").value.trim(),
     description: document.getElementById("cDesc").value.trim(),
     budget: Number(document.getElementById("cBudget").value) || 0,
     maxSlots: Number(document.getElementById("cMaxSlots").value) || 3,
@@ -370,7 +371,7 @@ async function loadCampaigns() {
 
     return `
     <tr>
-      <td>${escapeHtml(c.title || "—")}</td>
+      <td>${escapeHtml(c.title || "—")}${c.machines ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">🛠️ ${escapeHtml(c.machines)}</div>` : ""}</td>
       <td>
         ${filledCount}/${c.maxSlots || 3}
         ${extraNames ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Vaga extra: ${extraNames}</div>` : ""}
@@ -518,6 +519,7 @@ function openEditCampaignModal(id) {
   editingCampaignId = id;
   document.getElementById("ecTitle").value = c.title || "";
   document.getElementById("ecPlan").value = c.requiredPlan || "";
+  document.getElementById("ecMachines").value = c.machines || "";
   document.getElementById("ecDesc").value = c.description || "";
   document.getElementById("ecBudget").value = c.budget || 0;
   document.getElementById("ecMaxSlots").value = c.maxSlots || 3;
@@ -546,6 +548,7 @@ function bindEditCampaignModal() {
       await update(ref(db, `campaigns/${editingCampaignId}`), {
         title: titleValue,
         requiredPlan: document.getElementById("ecPlan").value.trim(),
+        machines: document.getElementById("ecMachines").value.trim(),
         description: document.getElementById("ecDesc").value.trim(),
         budget: Number(document.getElementById("ecBudget").value) || 0,
         maxSlots: Number(document.getElementById("ecMaxSlots").value) || 3,
