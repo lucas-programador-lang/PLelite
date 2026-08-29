@@ -26,8 +26,10 @@ const postsGridEl = document.getElementById("postsGrid");
 const postsCountEl = document.getElementById("postsCount");
 
 const activeCampaignsEl = document.getElementById("activeCampaigns");
+const andamentoCampaignsEl = document.getElementById("andamentoCampaigns");
 const completedCampaignsEl = document.getElementById("completedCampaigns");
 const activeCountEl = document.getElementById("activeCount");
+const andamentoCountEl = document.getElementById("andamentoCount");
 const completedCountEl = document.getElementById("completedCount");
 
 const STATUS_LABELS = {
@@ -133,14 +135,17 @@ function renderMetrics(metrics, campaignsObj) {
 function renderCampaigns(campaignsObj) {
   const campaigns = Object.entries(campaignsObj).map(([id, c]) => ({ id, ...c }));
 
-  const active = campaigns.filter((c) => c.status === "ativa" || c.status === "andamento");
+  const active = campaigns.filter((c) => c.status === "ativa");
+  const andamento = campaigns.filter((c) => c.status === "andamento");
   const completed = campaigns.filter((c) => c.status === "concluida" || c.status === "cancelada");
 
-  metricActiveCampaigns.textContent = active.length;
+  metricActiveCampaigns.textContent = active.length + andamento.length;
   activeCountEl.textContent = `${active.length} campanha${active.length === 1 ? "" : "s"}`;
+  andamentoCountEl.textContent = `${andamento.length} campanha${andamento.length === 1 ? "" : "s"}`;
   completedCountEl.textContent = `${completed.length} campanha${completed.length === 1 ? "" : "s"}`;
 
   renderGrid(activeCampaignsEl, active, "Nenhuma campanha ativa no momento.");
+  renderGrid(andamentoCampaignsEl, andamento, "Nenhuma campanha em andamento no momento.");
   renderGrid(completedCampaignsEl, completed, "Nenhuma campanha concluída ainda.");
 }
 
