@@ -34,6 +34,7 @@
     <a href="#publicacoesSection">📢 Publicações</a>
     <a href="#patrociniosSection">💰 Patrocínios</a>
     <a href="#raffleSection">🎁 Sorteios</a>
+    <a href="#minhaContaSection">👤 Minha Conta</a>
     <a href="https://chat.whatsapp.com/EWHtx2C2kGXERf4ZpMyXvS?s=cl&amp;p=a&amp;mlu=4" target="_blank" rel="noopener">👥 Grupo</a>
     <a href="admin.html">🔐 Área Administrativa</a>
   </nav>
@@ -118,6 +119,28 @@
         </div>
         <div class="campaign-grid" id="completedCampaigns">
           <p class="empty-state">Carregando campanhas…</p>
+        </div>
+      </section>
+
+      <section class="campaign-section" id="minhaContaSection">
+        <div class="section-heading">
+          <h2>👤 Minha Conta</h2>
+        </div>
+
+        <div class="panel-block">
+          <h3>Meus dados</h3>
+          <p class="modal-subtitle" style="margin:-8px 0 18px;">O e-mail aqui é só o registro de exibição — não altera o e-mail de login da sua conta.</p>
+          <p class="form-feedback" id="accountFeedback" role="alert" hidden></p>
+          <form class="modal-form" id="accountForm" style="max-width:420px;">
+            <div class="field"><label for="accName">Nome</label><input type="text" id="accName" required></div>
+            <div class="field"><label for="accEmail">E-mail (exibição)</label><input type="email" id="accEmail" required></div>
+            <button type="submit" class="btn-primary" id="accountSubmit" style="max-width:200px;"><span class="btn-label">Salvar</span></button>
+          </form>
+        </div>
+
+        <div class="panel-block">
+          <h3>Minhas participações</h3>
+          <div id="myHistoryList"><p class="empty-state">Carregando…</p></div>
         </div>
       </section>
 
