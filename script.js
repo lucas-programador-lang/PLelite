@@ -59,6 +59,17 @@ let currentUser = null;
 let currentUserName = "";
 let currentUserReferredBy = null;
 
+/* ---------- Sidebar (navegação entre "páginas") ---------- */
+
+document.querySelectorAll(".sidebar-link[data-view]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".sidebar-link[data-view]").forEach((b) => b.classList.remove("is-active"));
+    document.querySelectorAll(".app-view").forEach((v) => v.classList.remove("is-active"));
+    btn.classList.add("is-active");
+    document.getElementById(`view-${btn.dataset.view}`).classList.add("is-active");
+  });
+});
+
 /* ---------- Guarda de rota ---------- */
 
 logoutBtn.addEventListener("click", () => signOut(auth));
