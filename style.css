@@ -463,6 +463,36 @@ button, input { font-family: inherit; }
 
 .btn-ghost:hover { border-color: var(--gold); color: var(--gold-bright); }
 
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sidebar-toggle {
+  display: none;
+  background: none;
+  border: 1px solid rgba(201, 162, 75, 0.3);
+  color: var(--gold);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle:hover { border-color: var(--gold); color: var(--gold-bright); }
+
+.icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  flex-shrink: 0;
+}
+
 .app-main {
   flex: 1;
   width: 100%;
@@ -480,19 +510,25 @@ button, input { font-family: inherit; }
 
 .sidebar {
   flex-shrink: 0;
-  width: 220px;
+  width: 232px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 24px 12px;
   position: sticky;
   top: 75px;
+  max-height: calc(100vh - 75px);
+  overflow-y: auto;
   border-right: 1px solid rgba(201, 162, 75, 0.14);
   background: rgba(9, 8, 11, 0.4);
 }
 
+.sidebar-close { display: none; }
+
 .sidebar-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   text-align: left;
   text-decoration: none;
@@ -502,7 +538,7 @@ button, input { font-family: inherit; }
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  padding: 10px 14px;
+  padding: 11px 14px;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: color 0.2s var(--ease), background 0.2s var(--ease);
@@ -515,28 +551,54 @@ button, input { font-family: inherit; }
   background: linear-gradient(135deg, var(--gold-bright), var(--gold));
 }
 
+.sidebar-link.is-active .icon { stroke: #0c0a08; }
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 4, 6, 0.65);
+  backdrop-filter: blur(2px);
+  z-index: 40;
+}
+
+.sidebar-overlay.is-open { display: block; }
+
 .app-view { display: none; }
 .app-view.is-active { display: block; }
 
 @media (max-width: 900px) {
-  .app-body { flex-direction: column; }
+  .sidebar-toggle { display: flex; }
 
   .sidebar {
-    width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 6px;
-    padding: 10px 16px;
-    position: static;
-    border-right: none;
-    border-bottom: 1px solid rgba(201, 162, 75, 0.14);
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    max-height: 100vh;
+    width: 260px;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.25s var(--ease);
+    padding-top: 20px;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.4);
   }
 
-  .sidebar-link {
-    width: auto;
-    white-space: nowrap;
-    font-size: 12px;
-    padding: 8px 12px;
+  .sidebar.is-open { transform: translateX(0); }
+
+  .sidebar-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-end;
+    width: 32px;
+    height: 32px;
+    margin: 0 4px 12px auto;
+    background: none;
+    border: 1px solid rgba(201, 162, 75, 0.3);
+    border-radius: 8px;
+    color: var(--gold);
+    cursor: pointer;
   }
 }
 
@@ -753,34 +815,6 @@ button, input { font-family: inherit; }
 /* ===================================================================
    Painel administrativo (admin.html)
 =================================================================== */
-
-.admin-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 32px;
-  border-bottom: 1px solid rgba(201, 162, 75, 0.14);
-  padding-bottom: 14px;
-}
-
-.admin-tab {
-  background: none;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 16px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-}
-
-.admin-tab:hover { color: var(--text-primary); }
-
-.admin-tab.is-active {
-  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-  color: #0c0a08;
-}
 
 .admin-section { display: none; }
 .admin-section.is-active { display: block; }
