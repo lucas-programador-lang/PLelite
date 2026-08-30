@@ -11,16 +11,57 @@
 </head>
 <body>
 
+<svg style="display:none">
+  <defs>
+    <symbol id="icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1v-9"/></symbol>
+    <symbol id="icon-coins" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7" rx="6" ry="3.2"/><path d="M3 7v5c0 1.77 2.69 3.2 6 3.2s6-1.43 6-3.2V7"/><path d="M9 12.2v5c0 1.77 2.69 3.2 6 3.2s6-1.43 6-3.2v-5"/><ellipse cx="15" cy="12.2" rx="6" ry="3.2"/></symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 19c1-3.4 3.4-5.2 6.2-5.2s5.2 1.8 6.2 5.2"/><circle cx="17" cy="8.5" r="2.6"/><path d="M15.3 13.8c2.4.2 4.2 1.9 5 5"/></symbol>
+    <symbol id="icon-megaphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4a1 1 0 0 0 1 1h2l7 4V5L6 9H4a1 1 0 0 0-1 1Z"/><path d="M17 8.5a4 4 0 0 1 0 7"/><path d="M20 6a7.5 7.5 0 0 1 0 12"/></symbol>
+    <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.3 12.3l2.4 2.4 5-5.4"/></symbol>
+    <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.5l3.6 2"/></symbol>
+    <symbol id="icon-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="4" rx="0.5"/><path d="M5 13h14v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7Z"/><path d="M12 9v12"/><path d="M12 9C9 9 8 7.5 8 6.2 8 5 9 4 10.2 4 11.8 4 12 6.5 12 9Z"/><path d="M12 9c3 0 4-1.5 4-2.8C16 5 15 4 13.8 4 12.2 4 12 6.5 12 9Z"/></symbol>
+    <symbol id="icon-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10.5a6 6 0 0 1 12 0c0 4.2 1.3 5.5 1.3 5.5H4.7S6 14.7 6 10.5Z"/><path d="M10 19a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="icon-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12"/><path d="M8 12h12"/><path d="M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></symbol>
+  </defs>
+</svg>
+
 <div class="app-shell">
 
   <header class="app-header">
-    <div class="app-logo">PL<span>ELITE</span> <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);font-style:normal;">/ admin</span></div>
+    <div class="app-header-left">
+      <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">
+        <svg class="icon"><use href="#icon-menu"></use></svg>
+      </button>
+      <div class="app-logo">PL<span>ELITE</span> <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);font-style:normal;">/ admin</span></div>
+    </div>
     <div class="app-user">
       <span class="app-user-name">Olá, <strong id="userName">—</strong></span>
       <a class="btn-ghost" href="index.html" style="text-decoration:none;">Dashboard</a>
       <button type="button" class="btn-ghost" id="logoutBtn">Sair</button>
     </div>
   </header>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="app-body">
+
+    <nav class="sidebar" id="sidebar" role="tablist">
+      <button type="button" class="sidebar-close" id="sidebarClose" aria-label="Fechar menu">
+        <svg class="icon"><use href="#icon-close"></use></svg>
+      </button>
+      <button type="button" class="sidebar-link admin-tab is-active" data-tab="overview"><svg class="icon"><use href="#icon-home"></use></svg><span>Visão geral</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="financeiro"><svg class="icon"><use href="#icon-coins"></use></svg><span>Financeiro</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="users"><svg class="icon"><use href="#icon-users"></use></svg><span>Usuários</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="campaigns"><svg class="icon"><use href="#icon-megaphone"></use></svg><span>Campanhas</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="posts"><svg class="icon"><use href="#icon-megaphone"></use></svg><span>Publicações</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="validations"><svg class="icon"><use href="#icon-check-circle"></use></svg><span>Validações</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="history"><svg class="icon"><use href="#icon-clock"></use></svg><span>Histórico</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="raffle"><svg class="icon"><use href="#icon-gift"></use></svg><span>Bonificação</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="notifications"><svg class="icon"><use href="#icon-bell"></use></svg><span>Avisos</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="audit"><svg class="icon"><use href="#icon-list"></use></svg><span>Auditoria</span></button>
+    </nav>
 
   <main class="app-main">
 
@@ -31,19 +72,6 @@
     </div>
 
     <div id="adminContent" class="is-hidden">
-
-      <nav class="admin-tabs" role="tablist">
-        <button type="button" class="admin-tab is-active" data-tab="overview">Visão geral</button>
-        <button type="button" class="admin-tab" data-tab="financeiro">Financeiro</button>
-        <button type="button" class="admin-tab" data-tab="users">Usuários</button>
-        <button type="button" class="admin-tab" data-tab="campaigns">Campanhas</button>
-        <button type="button" class="admin-tab" data-tab="posts">Publicações</button>
-        <button type="button" class="admin-tab" data-tab="validations">Validações</button>
-        <button type="button" class="admin-tab" data-tab="history">Histórico</button>
-        <button type="button" class="admin-tab" data-tab="raffle">Bonificação</button>
-        <button type="button" class="admin-tab" data-tab="notifications">Avisos</button>
-        <button type="button" class="admin-tab" data-tab="audit">Auditoria</button>
-      </nav>
 
       <!-- VISÃO GERAL -->
       <section class="admin-section is-active" id="tab-overview">
@@ -105,6 +133,10 @@
             <div class="field"><label for="cEnd">Data de término</label><input type="date" id="cEnd"></div>
             <div class="field"><label for="cWhats">WhatsApp (só números, com DDI)</label><input type="text" id="cWhats" placeholder="5568999503477"></div>
             <div class="field"><label for="cWhatsMsg">Mensagem pré-configurada</label><input type="text" id="cWhatsMsg" placeholder="vim pelo site"></div>
+            <div class="field field-full">
+              <label for="cVisibleTo">Visível só para (deixe sem selecionar = todos autorizados)</label>
+              <select id="cVisibleTo" multiple size="4" class="btn-mini" style="width:100%;height:auto;"></select>
+            </div>
             <div class="field field-full"><label for="cSubmit"></label>
               <button type="submit" class="btn-primary btn-inline" id="campaignSubmit"><span class="btn-label">Criar campanha</span></button>
             </div>
@@ -284,6 +316,8 @@
 
   </main>
 
+  </div>
+
   <!-- Modal: editar usuário -->
   <div class="modal-overlay is-hidden" id="editUserModal">
     <div class="modal-card">
@@ -317,6 +351,10 @@
         <div class="field"><label for="ecEnd">Data de término</label><input type="date" id="ecEnd"></div>
         <div class="field"><label for="ecWhats">WhatsApp (só números, com DDI)</label><input type="text" id="ecWhats"></div>
         <div class="field"><label for="ecWhatsMsg">Mensagem pré-configurada</label><input type="text" id="ecWhatsMsg"></div>
+        <div class="field">
+          <label for="ecVisibleTo">Visível só para (deixe sem selecionar = todos autorizados)</label>
+          <select id="ecVisibleTo" multiple size="4" class="btn-mini" style="width:100%;height:auto;"></select>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn-mini" id="ecCancel">Cancelar</button>
           <button type="submit" class="btn-primary" id="ecSubmit"><span class="btn-label">Salvar</span></button>
