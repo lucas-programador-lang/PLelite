@@ -59,7 +59,26 @@ let currentUser = null;
 let currentUserName = "";
 let currentUserReferredBy = null;
 
-/* ---------- Sidebar (navegação entre "páginas") ---------- */
+/* ---------- Sidebar (navegação entre "páginas" + gaveta no mobile) ---------- */
+
+const sidebarEl = document.getElementById("sidebar");
+const sidebarOverlayEl = document.getElementById("sidebarOverlay");
+const sidebarToggleEl = document.getElementById("sidebarToggle");
+const sidebarCloseEl = document.getElementById("sidebarClose");
+
+function openSidebar() {
+  sidebarEl.classList.add("is-open");
+  sidebarOverlayEl.classList.add("is-open");
+}
+
+function closeSidebar() {
+  sidebarEl.classList.remove("is-open");
+  sidebarOverlayEl.classList.remove("is-open");
+}
+
+sidebarToggleEl.addEventListener("click", openSidebar);
+sidebarCloseEl.addEventListener("click", closeSidebar);
+sidebarOverlayEl.addEventListener("click", closeSidebar);
 
 document.querySelectorAll(".sidebar-link[data-view]").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -67,6 +86,7 @@ document.querySelectorAll(".sidebar-link[data-view]").forEach((btn) => {
     document.querySelectorAll(".app-view").forEach((v) => v.classList.remove("is-active"));
     btn.classList.add("is-active");
     document.getElementById(`view-${btn.dataset.view}`).classList.add("is-active");
+    closeSidebar();
   });
 });
 
@@ -144,7 +164,12 @@ function renderMetrics(metrics, campaignsObj) {
 }
 
 function renderCampaigns(campaignsObj) {
-  const campaigns = Object.entries(campaignsObj).map(([id, c]) => ({ id, ...c }));
+  const campaigns = Object.entries(campaignsObj)
+    .map(([id, c]) => ({ id, ...c }))
+    // Esconde campanhas restritas a um grupo específico de usuários (definido
+    // pelo admin em "Visível só para") de quem não está na lista. Isso é
+    // filtro de interface, não trava de banco — ver aviso no chat.
+    .filter((c) => !c.visibleTo || c.visibleTo[currentUser.uid]);
 
   const active = campaigns.filter((c) => c.status === "ativa");
   const andamento = campaigns.filter((c) => c.status === "andamento");
