@@ -65,9 +65,31 @@ function initTabs() {
       document.querySelectorAll(".admin-section").forEach((s) => s.classList.remove("is-active"));
       tab.classList.add("is-active");
       document.getElementById(`tab-${tab.dataset.tab}`).classList.add("is-active");
+      closeSidebar();
     });
   });
 }
+
+/* ---------- Sidebar (gaveta no mobile) ---------- */
+
+const sidebarEl = document.getElementById("sidebar");
+const sidebarOverlayEl = document.getElementById("sidebarOverlay");
+const sidebarToggleEl = document.getElementById("sidebarToggle");
+const sidebarCloseEl = document.getElementById("sidebarClose");
+
+function openSidebar() {
+  sidebarEl.classList.add("is-open");
+  sidebarOverlayEl.classList.add("is-open");
+}
+
+function closeSidebar() {
+  sidebarEl.classList.remove("is-open");
+  sidebarOverlayEl.classList.remove("is-open");
+}
+
+sidebarToggleEl.addEventListener("click", openSidebar);
+sidebarCloseEl.addEventListener("click", closeSidebar);
+sidebarOverlayEl.addEventListener("click", closeSidebar);
 
 /* ---------- Visão geral ---------- */
 
@@ -152,6 +174,30 @@ async function loadUsers() {
   usersCache = snap.exists() ? snap.val() : {};
   renderUsers(usersCache);
   populateNotifTargets();
+  populateVisibilityOptions();
+}
+
+/**
+ * Popula os <select multiple> de "visível só para" (criar e editar
+ * campanha) com os usuários autorizados e não bloqueados.
+ */
+function populateVisibilityOptions() {
+  const authorizedUsers = Object.entries(usersCache).filter(([, u]) => u.isAuthorized && !u.isBlocked);
+  const optionsHtml = authorizedUsers
+    .map(([uid, u]) => `<option value="${uid}">${escapeHtml(u.name || u.email)}</option>`)
+    .join("");
+  const cSelect = document.getElementById("cVisibleTo");
+  const ecSelect = document.getElementById("ecVisibleTo");
+  if (cSelect) cSelect.innerHTML = optionsHtml;
+  if (ecSelect) ecSelect.innerHTML = optionsHtml;
+}
+
+function readVisibleTo(selectEl) {
+  const selected = Array.from(selectEl.selectedOptions).map((o) => o.value);
+  if (selected.length === 0) return null;
+  const obj = {};
+  selected.forEach((uid) => { obj[uid] = true; });
+  return obj;
 }
 
 function renderUsers(users) {
@@ -336,6 +382,7 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
     endDate: document.getElementById("cEnd").value,
     whatsappNumber: document.getElementById("cWhats").value.trim(),
     whatsappMessage: document.getElementById("cWhatsMsg").value.trim(),
+    visibleTo: readVisibleTo(document.getElementById("cVisibleTo")),
     status: "ativa",
     createdAt: Date.now()
   });
@@ -371,7 +418,7 @@ async function loadCampaigns() {
 
     return `
     <tr>
-      <td>${escapeHtml(c.title || "—")}${c.machines ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">🛠️ ${escapeHtml(c.machines)}</div>` : ""}</td>
+      <td>${escapeHtml(c.title || "—")}${c.machines ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">🛠️ ${escapeHtml(c.machines)}</div>` : ""}${c.visibleTo ? `<div style="font-size:10.5px;color:var(--gold);margin-top:4px;">🔒 Visível só p/ ${Object.keys(c.visibleTo).length} usuário(s)</div>` : ""}</td>
       <td>
         ${filledCount}/${c.maxSlots || 3}
         ${extraNames ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Vaga extra: ${extraNames}</div>` : ""}
@@ -527,6 +574,12 @@ function openEditCampaignModal(id) {
   document.getElementById("ecEnd").value = c.endDate || "";
   document.getElementById("ecWhats").value = c.whatsappNumber || "";
   document.getElementById("ecWhatsMsg").value = c.whatsappMessage || "";
+
+  const ecSelect = document.getElementById("ecVisibleTo");
+  Array.from(ecSelect.options).forEach((opt) => {
+    opt.selected = !!(c.visibleTo && c.visibleTo[opt.value]);
+  });
+
   hideFeedback(editCampaignFeedback);
   editCampaignModal.classList.remove("is-hidden");
 }
@@ -555,7 +608,8 @@ function bindEditCampaignModal() {
         startDate: document.getElementById("ecStart").value,
         endDate: document.getElementById("ecEnd").value,
         whatsappNumber: document.getElementById("ecWhats").value.trim(),
-        whatsappMessage: document.getElementById("ecWhatsMsg").value.trim()
+        whatsappMessage: document.getElementById("ecWhatsMsg").value.trim(),
+        visibleTo: readVisibleTo(document.getElementById("ecVisibleTo"))
       });
       logAction(`Editou a campanha "${titleValue}"`);
       editCampaignModal.classList.add("is-hidden");
