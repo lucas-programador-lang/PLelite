@@ -24,6 +24,7 @@
     <symbol id="icon-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12"/><path d="M8 12h12"/><path d="M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
     <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></symbol>
     <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></symbol>
+    <symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h3"/><path d="M15 8l4 4-4 4"/><path d="M19 12H9"/></symbol>
   </defs>
 </svg>
 
@@ -34,12 +35,9 @@
       <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">
         <svg class="icon"><use href="#icon-menu"></use></svg>
       </button>
-      <div class="app-logo">PL<span>ELITE</span> <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);font-style:normal;">/ admin</span></div>
     </div>
     <div class="app-user">
-      <span class="app-user-name">Olá, <strong id="userName">—</strong></span>
-      <a class="btn-ghost" href="index.html" style="text-decoration:none;">Dashboard</a>
-      <button type="button" class="btn-ghost" id="logoutBtn">Sair</button>
+      <a class="btn-ghost" href="index.html" style="text-decoration:none;">Ver dashboard do usuário</a>
     </div>
   </header>
 
@@ -51,6 +49,14 @@
       <button type="button" class="sidebar-close" id="sidebarClose" aria-label="Fechar menu">
         <svg class="icon"><use href="#icon-close"></use></svg>
       </button>
+
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-mark">PL</div>
+        <div class="sidebar-brand-name">PL<span>ELITE</span></div>
+        <div class="sidebar-brand-tagline">PAINEL ADMINISTRATIVO</div>
+      </div>
+
+      <div class="sidebar-links">
       <button type="button" class="sidebar-link admin-tab is-active" data-tab="overview"><svg class="icon"><use href="#icon-home"></use></svg><span>Visão geral</span></button>
       <button type="button" class="sidebar-link admin-tab" data-tab="financeiro"><svg class="icon"><use href="#icon-coins"></use></svg><span>Financeiro</span></button>
       <button type="button" class="sidebar-link admin-tab" data-tab="users"><svg class="icon"><use href="#icon-users"></use></svg><span>Usuários</span></button>
@@ -61,6 +67,20 @@
       <button type="button" class="sidebar-link admin-tab" data-tab="raffle"><svg class="icon"><use href="#icon-gift"></use></svg><span>Bonificação</span></button>
       <button type="button" class="sidebar-link admin-tab" data-tab="notifications"><svg class="icon"><use href="#icon-bell"></use></svg><span>Avisos</span></button>
       <button type="button" class="sidebar-link admin-tab" data-tab="audit"><svg class="icon"><use href="#icon-list"></use></svg><span>Auditoria</span></button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user-card">
+          <div class="sidebar-user-avatar" id="sidebarAvatar">—</div>
+          <div>
+            <div class="sidebar-user-name" id="sidebarUserName">—</div>
+            <div class="sidebar-user-status">ADMINISTRADOR</div>
+          </div>
+        </div>
+        <button type="button" class="sidebar-logout" id="logoutBtn">
+          <svg class="icon"><use href="#icon-logout"></use></svg><span>Sair</span>
+        </button>
+      </div>
     </nav>
 
   <main class="app-main">
