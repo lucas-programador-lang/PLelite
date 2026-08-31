@@ -13,7 +13,8 @@ import {
   ref, onValue, get, set, update, remove, push
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const userNameEl = document.getElementById("userName");
+const sidebarUserNameEl = document.getElementById("sidebarUserName");
+const sidebarAvatarEl = document.getElementById("sidebarAvatar");
 const logoutBtn = document.getElementById("logoutBtn");
 const gateDenied = document.getElementById("gateDenied");
 const adminContent = document.getElementById("adminContent");
@@ -56,8 +57,9 @@ onAuthStateChanged(auth, (user) => {
       return;
     }
 
-    userNameEl.textContent = userData.name || user.email;
     currentAdminName = userData.name || user.email;
+    sidebarUserNameEl.textContent = currentAdminName;
+    sidebarAvatarEl.textContent = currentAdminName.trim().charAt(0).toUpperCase();
     gateDenied.classList.add("is-hidden");
     adminContent.classList.remove("is-hidden");
 
