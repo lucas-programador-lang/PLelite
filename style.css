@@ -834,7 +834,7 @@ button, input { font-family: inherit; }
 
 .campaign-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 18px;
 }
 
@@ -1116,7 +1116,19 @@ button, input { font-family: inherit; }
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 28px 26px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 480px) {
+  .modal-overlay { padding: 12px; align-items: flex-end; }
+
+  .modal-card {
+    padding: 22px 18px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: calc(100vh - 24px);
+  }
 }
 
 .modal-card h3 {
