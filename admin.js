@@ -3,12 +3,14 @@
 // Usado apenas por admin.html.
 // Protege a rota (role === "admin") e implementa o CRUD do painel:
 // usuários, campanhas, publicações, validações e bonificação/sorteio.
+// Tudo em tempo real via onValue() — a tela atualiza sozinha assim
+// que o dado muda no banco, sem precisar recarregar a página.
 // ===================================================================
 
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  ref, get, set, update, remove, push
+  ref, onValue, get, set, update, remove, push
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const userNameEl = document.getElementById("userName");
@@ -18,41 +20,57 @@ const adminContent = document.getElementById("adminContent");
 
 logoutBtn.addEventListener("click", () => signOut(auth));
 
-/* ---------- Guarda de rota (somente admin) ---------- */
+let currentAdminName = "";
+let listenersAttached = false;
+let raffleFormPrefilled = false;
 
-onAuthStateChanged(auth, async (user) => {
+// Caches locais alimentados pelos listeners onValue.
+let usersCache = {};
+let campaignsCache = {};
+let metricsCache = {};
+let postsCache = {};
+let validationsCache = {};
+let raffleCache = {};
+let raffleEntriesCache = {};
+let notifsCache = {};
+let auditCache = {};
+
+let editingUid = null;
+let editingCampaignId = null;
+let editingPostId = null;
+
+/* ---------- Guarda de rota (somente admin, em tempo real) ---------- */
+
+onAuthStateChanged(auth, (user) => {
   if (!user) {
     window.location.href = "login.html";
     return;
   }
 
-  const userSnap = await get(ref(db, `users/${user.uid}`));
-  const userData = userSnap.exists() ? userSnap.val() : null;
+  onValue(ref(db, `users/${user.uid}`), (snap) => {
+    const userData = snap.exists() ? snap.val() : null;
 
-  if (!userData || userData.role !== "admin") {
-    gateDenied.classList.remove("is-hidden");
-    return;
-  }
+    if (!userData || userData.role !== "admin") {
+      gateDenied.classList.remove("is-hidden");
+      adminContent.classList.add("is-hidden");
+      return;
+    }
 
-  userNameEl.textContent = userData.name || user.email;
-  currentAdminName = userData.name || user.email;
-  adminContent.classList.remove("is-hidden");
+    userNameEl.textContent = userData.name || user.email;
+    currentAdminName = userData.name || user.email;
+    gateDenied.classList.add("is-hidden");
+    adminContent.classList.remove("is-hidden");
 
-  initTabs();
-  bindUserSearch();
-  bindEditUserModal();
-  bindEditCampaignModal();
-  bindEditPostModal();
-  loadOverview();
-  loadFinanceiro();
-  await loadUsers();
-  loadCampaigns();
-  loadPosts();
-  loadValidations();
-  loadHistory();
-  loadRaffle();
-  loadNotifications();
-  loadAuditLog();
+    if (!listenersAttached) {
+      initTabs();
+      bindUserSearch();
+      bindEditUserModal();
+      bindEditCampaignModal();
+      bindEditPostModal();
+      attachRealtimeListeners();
+      listenersAttached = true;
+    }
+  });
 });
 
 /* ---------- Abas ---------- */
@@ -91,31 +109,81 @@ sidebarToggleEl.addEventListener("click", openSidebar);
 sidebarCloseEl.addEventListener("click", closeSidebar);
 sidebarOverlayEl.addEventListener("click", closeSidebar);
 
+/* ---------- Listeners em tempo real ---------- */
+
+function attachRealtimeListeners() {
+  onValue(ref(db, "users"), (snap) => {
+    usersCache = snap.exists() ? snap.val() : {};
+    renderUsersTable();
+    populateNotifTargets();
+    populateVisibilityOptions();
+    renderOverview();
+    renderFinanceiro();
+    renderHistoryTable();
+  });
+
+  onValue(ref(db, "campaigns"), (snap) => {
+    campaignsCache = snap.exists() ? snap.val() : {};
+    renderCampaignsTable();
+    renderOverview();
+    renderFinanceiro();
+    renderHistoryTable();
+  });
+
+  onValue(ref(db, "metrics"), (snap) => {
+    metricsCache = snap.exists() ? snap.val() : {};
+    renderOverview();
+  });
+
+  onValue(ref(db, "posts"), (snap) => {
+    postsCache = snap.exists() ? snap.val() : {};
+    renderPostsTable();
+  });
+
+  onValue(ref(db, "validations"), (snap) => {
+    validationsCache = snap.exists() ? snap.val() : {};
+    renderValidationsTable();
+    renderHistoryTable();
+  });
+
+  onValue(ref(db, "raffle"), (snap) => {
+    raffleCache = snap.exists() ? snap.val() : {};
+    renderRaffleAdmin();
+    renderFinanceiro();
+  });
+
+  onValue(ref(db, "raffleEntries"), (snap) => {
+    raffleEntriesCache = snap.exists() ? snap.val() : {};
+    renderRaffleAdmin();
+  });
+
+  onValue(ref(db, "notifications"), (snap) => {
+    notifsCache = snap.exists() ? snap.val() : {};
+    renderNotifsTable();
+  });
+
+  onValue(ref(db, "auditLog"), (snap) => {
+    auditCache = snap.exists() ? snap.val() : {};
+    renderAuditTable();
+  });
+}
+
 /* ---------- Visão geral ---------- */
 
-async function loadOverview() {
-  const [metricsSnap, usersSnap, campaignsSnap] = await Promise.all([
-    get(ref(db, "metrics")),
-    get(ref(db, "users")),
-    get(ref(db, "campaigns"))
-  ]);
+function renderOverview() {
+  const users = Object.values(usersCache);
+  const campaigns = Object.values(campaignsCache);
 
-  const metrics = metricsSnap.exists() ? metricsSnap.val() : {};
-  const users = usersSnap.exists() ? usersSnap.val() : {};
-  const campaigns = campaignsSnap.exists() ? Object.values(campaignsSnap.val()) : [];
-
-  const activeUsers = Object.values(users).filter((u) => u.isAuthorized && !u.isBlocked).length;
+  const activeUsers = users.filter((u) => u.isAuthorized && !u.isBlocked).length;
   const finished = campaigns.filter((c) => c.status === "concluida" || c.status === "cancelada");
   const successRate = finished.length
     ? Math.round((finished.filter((c) => c.status === "concluida").length / finished.length) * 100)
     : 0;
 
-  document.getElementById("ovRewards").textContent = formatCurrency(metrics.totalRewardsDistributed || 0);
-  document.getElementById("ovBonusFund").textContent = formatCurrency(metrics.bonusFund || 0);
+  document.getElementById("ovRewards").textContent = formatCurrency(metricsCache.totalRewardsDistributed || 0);
+  document.getElementById("ovBonusFund").textContent = formatCurrency(metricsCache.bonusFund || 0);
   document.getElementById("ovActiveUsers").textContent = activeUsers;
   document.getElementById("ovCompletionRate").textContent = `${successRate}%`;
-
-  if (campaignsSnap.exists()) window.__campaigns = campaignsSnap.val();
 }
 
 /**
@@ -123,14 +191,8 @@ async function loadOverview() {
  * total pago em patrocínios, total arrecadado pra sorteios, total de
  * participantes, total de oportunidades e a contagem por status.
  */
-async function loadFinanceiro() {
-  const [campaignsSnap, raffleSnap] = await Promise.all([
-    get(ref(db, "campaigns")),
-    get(ref(db, "raffle"))
-  ]);
-
-  const campaigns = campaignsSnap.exists() ? Object.values(campaignsSnap.val()) : [];
-  const raffle = raffleSnap.exists() ? raffleSnap.val() : {};
+function renderFinanceiro() {
+  const campaigns = Object.values(campaignsCache);
 
   const totalPago = campaigns
     .filter((c) => c.result)
@@ -145,7 +207,7 @@ async function loadFinanceiro() {
   const andamento = campaigns.filter((c) => c.status === "ativa" || c.status === "andamento").length;
 
   document.getElementById("fTotalPago").textContent = formatCurrency(totalPago);
-  document.getElementById("fTotalSorteios").textContent = formatCurrency(raffle.fund || 0);
+  document.getElementById("fTotalSorteios").textContent = formatCurrency(raffleCache.fund || 0);
   document.getElementById("fTotalParticipantes").textContent = participantUids.size;
   document.getElementById("fTotalOportunidades").textContent = campaigns.length;
   document.getElementById("fFinalizadas").textContent = finalizadas;
@@ -154,27 +216,8 @@ async function loadFinanceiro() {
 
 /* ---------- Usuários ---------- */
 
-let usersCache = {};
-let editingUid = null;
-
 function bindUserSearch() {
-  document.getElementById("userSearch").addEventListener("input", (e) => {
-    const term = e.target.value.trim().toLowerCase();
-    const filtered = Object.fromEntries(
-      Object.entries(usersCache).filter(([, u]) =>
-        (u.name || "").toLowerCase().includes(term) || (u.email || "").toLowerCase().includes(term)
-      )
-    );
-    renderUsers(filtered);
-  });
-}
-
-async function loadUsers() {
-  const snap = await get(ref(db, "users"));
-  usersCache = snap.exists() ? snap.val() : {};
-  renderUsers(usersCache);
-  populateNotifTargets();
-  populateVisibilityOptions();
+  document.getElementById("userSearch").addEventListener("input", renderUsersTable);
 }
 
 /**
@@ -200,7 +243,16 @@ function readVisibleTo(selectEl) {
   return obj;
 }
 
-function renderUsers(users) {
+function renderUsersTable() {
+  const term = document.getElementById("userSearch").value.trim().toLowerCase();
+  const users = term
+    ? Object.fromEntries(
+        Object.entries(usersCache).filter(([, u]) =>
+          (u.name || "").toLowerCase().includes(term) || (u.email || "").toLowerCase().includes(term)
+        )
+      )
+    : usersCache;
+
   const body = document.getElementById("usersTableBody");
   const entries = Object.entries(users);
 
@@ -279,7 +331,6 @@ async function handleUserAction(action, uid) {
     if (!confirm(`Excluir ${label} de vez? Isso remove o cadastro, os comprovantes enviados por ele e as participações em campanhas. Não dá pra desfazer.`)) return;
     await deleteUserCompletely(uid, label);
   }
-  loadUsers();
 }
 
 /**
@@ -349,7 +400,6 @@ function bindEditUserModal() {
         email: document.getElementById("euEmail").value.trim()
       });
       editUserModal.classList.add("is-hidden");
-      loadUsers();
     } catch (err) {
       showFeedback(editUserFeedback, "Não foi possível salvar. Tente novamente.");
     } finally {
@@ -359,9 +409,6 @@ function bindEditUserModal() {
 }
 
 /* ---------- Campanhas ---------- */
-
-let campaignsCache = {};
-let editingCampaignId = null;
 
 document.getElementById("campaignForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -390,12 +437,9 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
 
   e.target.reset();
   submitBtn.disabled = false;
-  loadCampaigns();
 });
 
-async function loadCampaigns() {
-  const snap = await get(ref(db, "campaigns"));
-  campaignsCache = snap.exists() ? snap.val() : {};
+function renderCampaignsTable() {
   const body = document.getElementById("campaignsTableBody");
   const entries = Object.entries(campaignsCache);
 
@@ -472,7 +516,6 @@ async function loadCampaigns() {
       await update(ref(db, `campaigns/${sel.dataset.id}`), { result: sel.value });
       if (sel.value) await finalizeParticipants(sel.dataset.id);
       logAction(`Registrou resultado da campanha "${c.title}": ${sel.value || "—"}`);
-      loadHistory();
     });
   });
 
@@ -484,7 +527,6 @@ async function loadCampaigns() {
     btn.addEventListener("click", async () => {
       const c = campaignsCache[btn.dataset.id];
       await update(ref(db, `campaigns/${btn.dataset.id}`), { maxSlots: (c.maxSlots || 3) + 1 });
-      loadCampaigns();
     });
   });
 
@@ -498,7 +540,6 @@ async function loadCampaigns() {
         maxSlots: (c.maxSlots || 3) + 1,
         [`extraSlots/${uid}`]: u.name || u.email
       });
-      loadCampaigns();
     });
   });
 
@@ -510,14 +551,12 @@ async function loadCampaigns() {
       await update(ref(db, `campaigns/${sel.dataset.id}`), {
         [`participants/${uid}`]: u.name || u.email
       });
-      loadCampaigns();
     });
   });
 
   body.querySelectorAll("button[data-action='remove-participant']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await remove(ref(db, `campaigns/${btn.dataset.id}/participants/${btn.dataset.uid}`));
-      loadCampaigns();
     });
   });
 
@@ -527,7 +566,6 @@ async function loadCampaigns() {
       const c = campaignsCache[btn.dataset.id];
       await remove(ref(db, `campaigns/${btn.dataset.id}`));
       logAction(`Excluiu a campanha "${c.title}"`);
-      loadCampaigns();
     });
   });
 }
@@ -613,7 +651,6 @@ function bindEditCampaignModal() {
       });
       logAction(`Editou a campanha "${titleValue}"`);
       editCampaignModal.classList.add("is-hidden");
-      loadCampaigns();
     } catch (err) {
       showFeedback(editCampaignFeedback, "Não foi possível salvar. Tente novamente.");
     } finally {
@@ -642,12 +679,9 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
 
   e.target.reset();
   submitBtn.disabled = false;
-  loadPosts();
 });
 
-async function loadPosts() {
-  const snap = await get(ref(db, "posts"));
-  postsCache = snap.exists() ? snap.val() : {};
+function renderPostsTable() {
   const body = document.getElementById("postsTableBody");
   const entries = Object.entries(postsCache).sort((a, b) => (b[1].date || 0) - (a[1].date || 0));
 
@@ -681,15 +715,11 @@ async function loadPosts() {
     btn.addEventListener("click", async () => {
       if (!confirm("Excluir esta publicação?")) return;
       await remove(ref(db, `posts/${btn.dataset.id}`));
-      loadPosts();
     });
   });
 }
 
 /* ---------- Modal: editar publicação ---------- */
-
-let postsCache = {};
-let editingPostId = null;
 
 const editPostModal = document.getElementById("editPostModal");
 const editPostForm = document.getElementById("editPostForm");
@@ -731,7 +761,6 @@ function bindEditPostModal() {
         status: document.getElementById("epStatus").value
       });
       editPostModal.classList.add("is-hidden");
-      loadPosts();
     } catch (err) {
       showFeedback(editPostFeedback, "Não foi possível salvar. Tente novamente.");
     } finally {
@@ -742,11 +771,9 @@ function bindEditPostModal() {
 
 /* ---------- Validações (comprovantes) ---------- */
 
-async function loadValidations() {
-  const snap = await get(ref(db, "validations"));
-  const validations = snap.exists() ? snap.val() : {};
+function renderValidationsTable() {
   const body = document.getElementById("validationsTableBody");
-  const entries = Object.entries(validations);
+  const entries = Object.entries(validationsCache);
 
   if (entries.length === 0) {
     body.innerHTML = `<tr><td colspan="7">Nenhum comprovante enviado ainda.</td></tr>`;
@@ -784,8 +811,6 @@ async function loadValidations() {
         await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { status: "aprovado" });
       }
       logAction(`Aprovou o comprovante de ${btn.dataset.name}`);
-      loadValidations();
-      loadHistory();
     });
   });
 
@@ -796,27 +821,16 @@ async function loadValidations() {
         await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { status: "rejeitado" });
       }
       logAction(`Rejeitou o comprovante de ${btn.dataset.name}`);
-      loadValidations();
-      loadHistory();
     });
   });
 }
 
 /* ---------- Histórico de participantes ---------- */
 
-async function loadHistory() {
-  const [validationsSnap, usersSnap, campaignsSnap] = await Promise.all([
-    get(ref(db, "validations")),
-    get(ref(db, "users")),
-    get(ref(db, "campaigns"))
-  ]);
-
-  const validations = validationsSnap.exists() ? validationsSnap.val() : {};
-  const users = usersSnap.exists() ? usersSnap.val() : {};
-  const campaigns = campaignsSnap.exists() ? campaignsSnap.val() : {};
+function renderHistoryTable() {
   const body = document.getElementById("historyTableBody");
 
-  const entries = Object.entries(validations)
+  const entries = Object.entries(validationsCache)
     .map(([id, v]) => ({ id, ...v }))
     .filter((v) => v.status === "aprovado")
     .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
@@ -833,8 +847,8 @@ async function loadHistory() {
   });
 
   body.innerHTML = entries.map((v) => {
-    const u = users[v.userId];
-    const c = campaigns[v.campaignId];
+    const u = usersCache[v.userId];
+    const c = campaignsCache[v.campaignId];
     const userName = (u && u.name) || v.userName || "—";
     const value = c && c.budget ? formatCurrency(c.budget) : "—";
     const timesParticipated = countByUser[v.userId] || 1;
@@ -875,7 +889,6 @@ async function loadHistory() {
       if (btn.dataset.uid) {
         await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { withdrawalDone: true });
       }
-      loadHistory();
     });
   });
 }
@@ -893,21 +906,19 @@ document.getElementById("raffleForm").addEventListener("submit", async (e) => {
   await update(ref(db, "metrics"), { bonusFund: Number(document.getElementById("rFund").value) || 0 });
 });
 
-async function loadRaffle() {
-  const [raffleSnap, entriesSnap] = await Promise.all([
-    get(ref(db, "raffle")),
-    get(ref(db, "raffleEntries"))
-  ]);
+function renderRaffleAdmin() {
+  // Só preenche o formulário na primeira vez, pra não apagar o que o
+  // admin está digitando se o valor mudar em tempo real vindo de outro lugar.
+  if (!raffleFormPrefilled) {
+    document.getElementById("rFund").value = raffleCache.fund || "";
+    document.getElementById("rDate").value = raffleCache.date || "";
+    document.getElementById("rWinner").value = raffleCache.winner || "";
+    document.getElementById("rRules").value = raffleCache.rules || "";
+    raffleFormPrefilled = true;
+  }
 
-  const raffle = raffleSnap.exists() ? raffleSnap.val() : {};
-  document.getElementById("rFund").value = raffle.fund || "";
-  document.getElementById("rDate").value = raffle.date || "";
-  document.getElementById("rWinner").value = raffle.winner || "";
-  document.getElementById("rRules").value = raffle.rules || "";
-
-  const entries = entriesSnap.exists() ? entriesSnap.val() : {};
   const body = document.getElementById("raffleTableBody");
-  const list = Object.entries(entries);
+  const list = Object.entries(raffleEntriesCache);
 
   if (list.length === 0) {
     body.innerHTML = `<tr><td colspan="3">Nenhum usuário qualificado ainda.</td></tr>`;
@@ -925,7 +936,6 @@ async function loadRaffle() {
   body.querySelectorAll("button[data-action='remove-entry']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await remove(ref(db, `raffleEntries/${btn.dataset.id}`));
-      loadRaffle();
     });
   });
 }
@@ -960,14 +970,11 @@ document.getElementById("notifForm").addEventListener("submit", async (e) => {
 
   e.target.reset();
   submitBtn.disabled = false;
-  loadNotifications();
 });
 
-async function loadNotifications() {
-  const snap = await get(ref(db, "notifications"));
-  const notifs = snap.exists() ? snap.val() : {};
+function renderNotifsTable() {
   const body = document.getElementById("notifsTableBody");
-  const entries = Object.entries(notifs).sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+  const entries = Object.entries(notifsCache).sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
 
   const TYPE_LABELS = { resgate: "Resgate", plano: "Plano", prazo: "Prazo", aviso: "Instrução" };
 
@@ -991,14 +998,11 @@ async function loadNotifications() {
       if (!confirm("Excluir este aviso?")) return;
       await remove(ref(db, `notifications/${btn.dataset.id}`));
       logAction(`Excluiu o aviso "${btn.dataset.title}"`);
-      loadNotifications();
     });
   });
 }
 
 /* ---------- Auditoria ---------- */
-
-let currentAdminName = "";
 
 function logAction(action) {
   push(ref(db, "auditLog"), {
@@ -1009,12 +1013,10 @@ function logAction(action) {
   }).catch(() => {});
 }
 
-async function loadAuditLog() {
-  const snap = await get(ref(db, "auditLog"));
-  const log = snap.exists() ? snap.val() : {};
+function renderAuditTable() {
   const body = document.getElementById("auditTableBody");
 
-  const entries = Object.values(log)
+  const entries = Object.values(auditCache)
     .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
     .slice(0, 100);
 
