@@ -814,6 +814,15 @@ button, input { font-family: inherit; }
   font-size: 19px;
   font-weight: 500;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-heading h2 .icon {
+  width: 19px;
+  height: 19px;
+  color: var(--gold-bright);
 }
 
 .section-heading span {
@@ -926,7 +935,10 @@ button, input { font-family: inherit; }
    no topo do dashboard) — não fica dentro de um flex, então precisa
    virar bloco próprio com espaçamento embaixo. */
 .btn-whatsapp-group {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
   margin: 0 0 12px;
   padding: 13px 0;
   font-size: 13.5px;
