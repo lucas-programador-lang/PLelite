@@ -10,7 +10,13 @@ import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const userNameEl = document.getElementById("userName");
+const sidebarUserNameEl = document.getElementById("sidebarUserName");
+const sidebarAvatarEl = document.getElementById("sidebarAvatar");
+
+function updateSidebarUser(name) {
+  sidebarUserNameEl.textContent = name;
+  sidebarAvatarEl.textContent = (name || "?").trim().charAt(0).toUpperCase();
+}
 const logoutBtn = document.getElementById("logoutBtn");
 
 const gatePending = document.getElementById("gatePending");
@@ -127,7 +133,7 @@ onAuthStateChanged(auth, (user) => {
     currentUser = user;
     currentUserName = userData.name || user.email;
     currentUserReferredBy = userData.referredBy || null;
-    userNameEl.textContent = currentUserName;
+    updateSidebarUser(currentUserName);
 
     // Só preenche o formulário de "Minha Conta" na primeira vez — assim não
     // apaga o que a pessoa está digitando se o registro mudar em tempo real.
@@ -393,7 +399,7 @@ document.getElementById("accountForm").addEventListener("submit", async (e) => {
   try {
     await update(ref(db, `users/${currentUser.uid}`), { name: newName, email: newEmail });
     currentUserName = newName;
-    userNameEl.textContent = newName;
+    updateSidebarUser(newName);
     feedback.textContent = "Dados atualizados!";
     feedback.hidden = false;
     feedback.classList.add("is-success");
