@@ -1,13 +1,14 @@
 // ===================================================================
 // PL ELITE — script.js
 // Usado apenas por index.html (dashboard).
-// Protege a rota (isAuthorized), busca campanhas, publicações e
-// métricas no Realtime Database e renderiza os cards.
+// Protege a rota (isAuthorized) e mantém tudo em tempo real via
+// onValue() do Realtime Database — a tela atualiza sozinha assim que
+// o dado muda no banco, sem precisar recarregar a página.
 // ===================================================================
 
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { ref, get, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const userNameEl = document.getElementById("userName");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -58,6 +59,16 @@ const GENERIC_WHATSAPP_URL = "https://wa.me/5568999503477?text=vim%20pelo%20o%20
 let currentUser = null;
 let currentUserName = "";
 let currentUserReferredBy = null;
+let listenersAttached = false;
+let accountFormPrefilled = false;
+
+// Caches locais alimentados pelos listeners onValue — as funções de
+// render leem daqui, então qualquer listener que muda pode disparar
+// o render de tudo que depende dele.
+let campaignsCache = {};
+let metricsCache = {};
+let raffleCache = {};
+let raffleEntriesCache = {};
 
 /* ---------- Sidebar (navegação entre "páginas" + gaveta no mobile) ---------- */
 
@@ -90,39 +101,49 @@ document.querySelectorAll(".sidebar-link[data-view]").forEach((btn) => {
   });
 });
 
-/* ---------- Guarda de rota ---------- */
+/* ---------- Guarda de rota (em tempo real: reage a bloqueio/autorização ao vivo) ---------- */
 
 logoutBtn.addEventListener("click", () => signOut(auth));
 
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, (user) => {
   if (!user) {
     window.location.href = "login.html";
     return;
   }
 
-  const userSnap = await get(ref(db, `users/${user.uid}`));
-  const userData = userSnap.exists() ? userSnap.val() : null;
+  onValue(ref(db, `users/${user.uid}`), (snap) => {
+    const userData = snap.exists() ? snap.val() : null;
 
-  if (!userData || userData.isBlocked) {
-    show(gateBlocked);
-    return;
-  }
+    if (!userData || userData.isBlocked) {
+      show(gateBlocked);
+      return;
+    }
 
-  if (!userData.isAuthorized) {
-    show(gatePending);
-    return;
-  }
+    if (!userData.isAuthorized) {
+      show(gatePending);
+      return;
+    }
 
-  currentUser = user;
-  currentUserName = userData.name || user.email;
-  currentUserReferredBy = userData.referredBy || null;
-  userNameEl.textContent = currentUserName;
-  show(dashboardContent);
-  loadDashboard();
-  loadPosts();
-  loadRaffleInfo();
-  loadNotifications();
-  loadMyAccount(userData);
+    currentUser = user;
+    currentUserName = userData.name || user.email;
+    currentUserReferredBy = userData.referredBy || null;
+    userNameEl.textContent = currentUserName;
+
+    // Só preenche o formulário de "Minha Conta" na primeira vez — assim não
+    // apaga o que a pessoa está digitando se o registro mudar em tempo real.
+    if (!accountFormPrefilled) {
+      document.getElementById("accName").value = userData.name || "";
+      document.getElementById("accEmail").value = userData.email || "";
+      accountFormPrefilled = true;
+    }
+
+    show(dashboardContent);
+
+    if (!listenersAttached) {
+      attachRealtimeListeners();
+      listenersAttached = true;
+    }
+  });
 });
 
 function show(panel) {
@@ -130,20 +151,48 @@ function show(panel) {
   panel.classList.remove("is-hidden");
 }
 
-/* ---------- Carregamento dos dados ---------- */
+/* ---------- Listeners em tempo real ---------- */
 
-async function loadDashboard() {
-  const [campaignsSnap, metricsSnap] = await Promise.all([
-    get(ref(db, "campaigns")),
-    get(ref(db, "metrics"))
-  ]);
+function attachRealtimeListeners() {
+  onValue(ref(db, "campaigns"), (snap) => {
+    campaignsCache = snap.exists() ? snap.val() : {};
+    renderMetrics();
+    renderCampaigns();
+    renderRaffleInfo();
+  });
 
-  renderMetrics(metricsSnap.exists() ? metricsSnap.val() : {}, campaignsSnap.exists() ? campaignsSnap.val() : {});
-  renderCampaigns(campaignsSnap.exists() ? campaignsSnap.val() : {});
+  onValue(ref(db, "metrics"), (snap) => {
+    metricsCache = snap.exists() ? snap.val() : {};
+    renderMetrics();
+  });
+
+  onValue(ref(db, "raffle"), (snap) => {
+    raffleCache = snap.exists() ? snap.val() : {};
+    renderRaffleInfo();
+  });
+
+  onValue(ref(db, "raffleEntries"), (snap) => {
+    raffleEntriesCache = snap.exists() ? snap.val() : {};
+    renderRaffleInfo();
+  });
+
+  onValue(ref(db, "posts"), (snap) => {
+    renderPosts(snap.exists() ? snap.val() : {});
+  });
+
+  onValue(ref(db, "notifications"), (snap) => {
+    renderNotifications(snap.exists() ? snap.val() : {});
+  });
+
+  onValue(ref(db, `users/${currentUser.uid}/myValidations`), (snap) => {
+    renderMyHistory(snap.exists() ? snap.val() : {});
+  });
 }
 
-function renderMetrics(metrics, campaignsObj) {
-  const campaigns = Object.values(campaignsObj);
+/* ---------- Métricas + campanhas ---------- */
+
+function renderMetrics() {
+  const campaigns = Object.values(campaignsCache);
 
   // Total pago em patrocínios: soma do orçamento das campanhas já finalizadas
   // (com resultado registrado, 🟢 ou 🔴) — dinheiro que já foi de fato pago.
@@ -159,12 +208,14 @@ function renderMetrics(metrics, campaignsObj) {
   });
 
   metricRewards.textContent = formatCurrency(totalPago);
-  metricBonusFund.textContent = formatCurrency(metrics.bonusFund || 0);
+  metricBonusFund.textContent = formatCurrency(metricsCache.bonusFund || 0);
   metricActiveUsers.textContent = participantUids.size;
 }
 
-function renderCampaigns(campaignsObj) {
-  const campaigns = Object.entries(campaignsObj)
+function renderCampaigns() {
+  if (!currentUser) return;
+
+  const campaigns = Object.entries(campaignsCache)
     .map(([id, c]) => ({ id, ...c }))
     // Esconde campanhas restritas a um grupo específico de usuários (definido
     // pelo admin em "Visível só para") de quem não está na lista. Isso é
@@ -243,22 +294,18 @@ function buildCampaignCard(c) {
 
 /* ---------- Sorteio ---------- */
 
-async function loadRaffleInfo() {
-  const [raffleSnap, entriesSnap, campaignsSnap] = await Promise.all([
-    get(ref(db, "raffle")),
-    get(ref(db, "raffleEntries")),
-    get(ref(db, "campaigns"))
-  ]);
+function renderRaffleInfo() {
+  if (!currentUser) return;
 
-  const raffle = raffleSnap.exists() ? raffleSnap.val() : {};
-  const entriesObj = entriesSnap.exists() ? entriesSnap.val() : {};
+  const raffle = raffleCache;
+  const entriesObj = raffleEntriesCache;
   const entries = Object.values(entriesObj);
   const isEligible = !!currentUserReferredBy;
   const alreadyEntered = !!entriesObj[currentUser.uid];
 
   // "Quem participou do sorteio" (raffleEntries) é diferente de "quem foi
   // patrocinado" (participants em qualquer campaign) — dados distintos.
-  const campaigns = campaignsSnap.exists() ? Object.values(campaignsSnap.val()) : [];
+  const campaigns = Object.values(campaignsCache);
   const patrocinadosSet = new Set();
   campaigns.forEach((c) => {
     if (c.participants) Object.values(c.participants).forEach((name) => patrocinadosSet.add(name));
@@ -322,7 +369,8 @@ async function loadRaffleInfo() {
           email: currentUser.email,
           joinedAt: Date.now()
         });
-        loadRaffleInfo();
+        // Não precisa recarregar manualmente — o listener onValue de
+        // raffleEntries já vai disparar e re-renderizar sozinho.
       } catch (err) {
         joinBtn.disabled = false;
       }
@@ -331,12 +379,6 @@ async function loadRaffleInfo() {
 }
 
 /* ---------- Minha Conta ---------- */
-
-function loadMyAccount(userData) {
-  document.getElementById("accName").value = userData.name || "";
-  document.getElementById("accEmail").value = userData.email || "";
-  loadMyHistory();
-}
 
 document.getElementById("accountForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -364,11 +406,8 @@ document.getElementById("accountForm").addEventListener("submit", async (e) => {
   }
 });
 
-async function loadMyHistory() {
-  const snap = await get(ref(db, `users/${currentUser.uid}/myValidations`));
-  const validations = snap.exists() ? snap.val() : {};
+function renderMyHistory(validations) {
   const listEl = document.getElementById("myHistoryList");
-
   const mine = Object.values(validations).sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
 
   if (mine.length === 0) {
@@ -376,7 +415,7 @@ async function loadMyHistory() {
     return;
   }
 
-  const STATUS_LABELS = {
+  const HISTORY_STATUS_LABELS = {
     aprovado: `<span class="status-tag status-ativa">Aprovado</span>`,
     rejeitado: `<span class="status-tag status-cancelada">Rejeitado</span>`,
     pendente: `<span class="status-tag status-andamento">Pendente</span>`
@@ -388,7 +427,7 @@ async function loadMyHistory() {
         <h3 class="campaign-title" style="font-size:15px;">${escapeHtml(v.campaignTitle || "—")}</h3>
         ${v.participantFinalized
           ? `<span class="status-tag status-concluida">✅ FINALIZADO</span>`
-          : (STATUS_LABELS[v.status] || STATUS_LABELS.pendente)}
+          : (HISTORY_STATUS_LABELS[v.status] || HISTORY_STATUS_LABELS.pendente)}
       </div>
       <div class="campaign-meta">
         <span>${v.startDate ? new Date(v.startDate).toLocaleDateString("pt-BR") : "—"} — ${v.endDate ? new Date(v.endDate).toLocaleDateString("pt-BR") : "—"}</span>
@@ -400,10 +439,8 @@ async function loadMyHistory() {
 
 /* ---------- Publicações ---------- */
 
-async function loadPosts() {
-  const snap = await get(ref(db, "posts"));
-  const posts = snap.exists() ? snap.val() : {};
-  const entries = Object.entries(posts)
+function renderPosts(postsObj) {
+  const entries = Object.entries(postsObj)
     .map(([id, p]) => ({ id, ...p }))
     .filter((p) => !p.status || p.status === "publicado")
     .sort((a, b) => (b.date || 0) - (a.date || 0));
@@ -513,7 +550,8 @@ proofForm.addEventListener("submit", async (e) => {
 
     // Cópia mínima no próprio perfil do usuário — permite que ele veja seu
     // histórico sem precisar de acesso de leitura ao node /validations
-    // inteiro (que é reservado ao admin nas Rules).
+    // inteiro (que é reservado ao admin nas Rules). O listener onValue de
+    // myValidations já pega essa escrita sozinho.
     await set(ref(db, `users/${currentUser.uid}/myValidations/${newRef.key}`), {
       campaignTitle: campaignTitleValue,
       startDate: startDateValue,
@@ -578,28 +616,22 @@ document.addEventListener("click", (e) => {
   }
 });
 
-async function loadNotifications() {
-  const snap = await get(ref(db, "notifications"));
-  const all = snap.exists() ? snap.val() : {};
-
+function renderNotifications(all) {
   const mine = Object.entries(all)
     .filter(([, n]) => !n.targetUid || n.targetUid === currentUser.uid)
     .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
 
-  renderNotifications(mine);
-}
-
-function renderNotifications(entries) {
-  if (entries.length === 0) {
+  if (mine.length === 0) {
     notifList.innerHTML = `<p class="notif-empty">Nenhum aviso por enquanto.</p>`;
     updateBadge(0);
+    window.__notifEntries = [];
     return;
   }
 
-  const unreadCount = entries.filter(([, n]) => !(n.readBy && n.readBy[currentUser.uid])).length;
+  const unreadCount = mine.filter(([, n]) => !(n.readBy && n.readBy[currentUser.uid])).length;
   updateBadge(unreadCount);
 
-  notifList.innerHTML = entries.map(([id, n]) => {
+  notifList.innerHTML = mine.map(([id, n]) => {
     const isUnread = !(n.readBy && n.readBy[currentUser.uid]);
     const date = n.createdAt ? new Date(n.createdAt).toLocaleDateString("pt-BR") : "";
     return `
@@ -612,7 +644,7 @@ function renderNotifications(entries) {
       </div>`;
   }).join("");
 
-  window.__notifEntries = entries;
+  window.__notifEntries = mine;
 }
 
 function updateBadge(count) {
@@ -630,8 +662,6 @@ async function markAllAsRead() {
   if (unread.length === 0) return;
 
   await Promise.all(unread.map(([id]) => set(ref(db, `notifications/${id}/readBy/${currentUser.uid}`), true)));
-  updateBadge(0);
-  document.querySelectorAll(".notif-item.is-unread").forEach((el) => el.classList.remove("is-unread"));
 }
 
 /* ---------- Utilitários ---------- */
