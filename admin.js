@@ -864,7 +864,7 @@ function renderHistoryTable() {
     .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
 
   if (entries.length === 0) {
-    body.innerHTML = `<tr><td colspan="8">Nenhuma participação aprovada ainda.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9">Nenhuma participação aprovada ainda.</td></tr>`;
     return;
   }
 
