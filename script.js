@@ -377,8 +377,10 @@ function renderRaffleInfo() {
         });
         // Não precisa recarregar manualmente — o listener onValue de
         // raffleEntries já vai disparar e re-renderizar sozinho.
+        showToast("Você entrou no sorteio!", "success");
       } catch (err) {
         joinBtn.disabled = false;
+        showToast("Não foi possível entrar no sorteio. Tente novamente.", "error");
       }
     });
   }
@@ -388,9 +390,7 @@ function renderRaffleInfo() {
 
 document.getElementById("accountForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const feedback = document.getElementById("accountFeedback");
   const submitBtn = document.getElementById("accountSubmit");
-  feedback.hidden = true;
   submitBtn.disabled = true;
 
   const newName = document.getElementById("accName").value.trim();
@@ -400,13 +400,9 @@ document.getElementById("accountForm").addEventListener("submit", async (e) => {
     await update(ref(db, `users/${currentUser.uid}`), { name: newName, email: newEmail });
     currentUserName = newName;
     updateSidebarUser(newName);
-    feedback.textContent = "Dados atualizados!";
-    feedback.hidden = false;
-    feedback.classList.add("is-success");
+    showToast("Dados atualizados!", "success");
   } catch (err) {
-    feedback.textContent = "Não foi possível salvar. Tente novamente.";
-    feedback.hidden = false;
-    feedback.classList.remove("is-success");
+    showToast("Não foi possível salvar. Tente novamente.", "error");
   } finally {
     submitBtn.disabled = false;
   }
@@ -566,20 +562,19 @@ proofForm.addEventListener("submit", async (e) => {
       submittedAt: Date.now()
     });
 
-    showProofFeedback("Comprovante enviado! Aguarde a validação do administrador.", "success");
-    setTimeout(() => proofModal.classList.add("is-hidden"), 1400);
+    proofModal.classList.add("is-hidden");
+    showToast("Comprovante enviado! Aguarde a validação do administrador.", "success");
   } catch (err) {
-    showProofFeedback("Não foi possível enviar o comprovante. Tente novamente.");
+    showToast("Não foi possível enviar o comprovante. Tente novamente.", "error");
   } finally {
     submitBtn.disabled = false;
     submitBtn.classList.remove("is-loading");
   }
 });
 
-function showProofFeedback(message, type = "error") {
+function showProofFeedback(message) {
   proofFeedback.textContent = message;
   proofFeedback.hidden = false;
-  proofFeedback.classList.toggle("is-success", type === "success");
 }
 
 function hideProofFeedback() {
@@ -682,6 +677,34 @@ function formatDateRange(start, end) {
   const s = start ? new Date(start).toLocaleDateString("pt-BR", opts) : "?";
   const e = end ? new Date(end).toLocaleDateString("pt-BR", opts) : "?";
   return `${s} — ${e}`;
+}
+
+/* ---------- Toasts ---------- */
+
+const toastContainer = document.getElementById("toastContainer");
+
+function showToast(message, type = "success") {
+  const iconId = type === "success" ? "icon-check-circle" : "icon-alert";
+
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <svg class="icon"><use href="#${iconId}"></use></svg>
+    <span class="toast-message">${escapeHtml(message)}</span>
+  `;
+
+  toast.addEventListener("click", () => dismissToast(toast));
+  toastContainer.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add("is-visible"));
+
+  setTimeout(() => dismissToast(toast), 4000);
+}
+
+function dismissToast(toast) {
+  if (!toast.isConnected) return;
+  toast.classList.remove("is-visible");
+  setTimeout(() => toast.remove(), 300);
 }
 
 function escapeHtml(str) {
