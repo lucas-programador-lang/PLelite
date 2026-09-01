@@ -308,30 +308,41 @@ async function handleUserAction(action, uid) {
   }
   const u = usersCache[uid];
   const label = (u && (u.name || u.email)) || uid;
-  if (action === "authorize") {
-    await update(ref(db, `users/${uid}`), { isAuthorized: true });
-    logAction(`Autorizou o usuário ${label}`);
-  }
-  if (action === "deauthorize") {
-    await update(ref(db, `users/${uid}`), { isAuthorized: false });
-    logAction(`Removeu a autorização de ${label}`);
-  }
-  if (action === "block") {
-    await update(ref(db, `users/${uid}`), { isBlocked: true });
-    logAction(`Bloqueou o usuário ${label}`);
-  }
-  if (action === "unblock") {
-    await update(ref(db, `users/${uid}`), { isBlocked: false });
-    logAction(`Desbloqueou o usuário ${label}`);
-  }
-  if (action === "ban") {
-    if (!confirm(`Banir ${label}? A conta fica bloqueada e marcada como banida, mas o histórico é mantido.`)) return;
-    await update(ref(db, `users/${uid}`), { isBlocked: true, isBanned: true });
-    logAction(`Baniu o usuário ${label}`);
-  }
-  if (action === "delete-user") {
-    if (!confirm(`Excluir ${label} de vez? Isso remove o cadastro, os comprovantes enviados por ele e as participações em campanhas. Não dá pra desfazer.`)) return;
-    await deleteUserCompletely(uid, label);
+
+  try {
+    if (action === "authorize") {
+      await update(ref(db, `users/${uid}`), { isAuthorized: true });
+      logAction(`Autorizou o usuário ${label}`);
+      showToast(`${label} foi autorizado.`, "success");
+    }
+    if (action === "deauthorize") {
+      await update(ref(db, `users/${uid}`), { isAuthorized: false });
+      logAction(`Removeu a autorização de ${label}`);
+      showToast(`Autorização de ${label} removida.`, "success");
+    }
+    if (action === "block") {
+      await update(ref(db, `users/${uid}`), { isBlocked: true });
+      logAction(`Bloqueou o usuário ${label}`);
+      showToast(`${label} foi bloqueado.`, "success");
+    }
+    if (action === "unblock") {
+      await update(ref(db, `users/${uid}`), { isBlocked: false });
+      logAction(`Desbloqueou o usuário ${label}`);
+      showToast(`${label} foi desbloqueado.`, "success");
+    }
+    if (action === "ban") {
+      if (!confirm(`Banir ${label}? A conta fica bloqueada e marcada como banida, mas o histórico é mantido.`)) return;
+      await update(ref(db, `users/${uid}`), { isBlocked: true, isBanned: true });
+      logAction(`Baniu o usuário ${label}`);
+      showToast(`${label} foi banido.`, "success");
+    }
+    if (action === "delete-user") {
+      if (!confirm(`Excluir ${label} de vez? Isso remove o cadastro, os comprovantes enviados por ele e as participações em campanhas. Não dá pra desfazer.`)) return;
+      await deleteUserCompletely(uid, label);
+      showToast(`${label} foi excluído.`, "success");
+    }
+  } catch (err) {
+    showToast("Não foi possível concluir a ação. Tente novamente.", "error");
   }
 }
 
@@ -402,8 +413,9 @@ function bindEditUserModal() {
         email: document.getElementById("euEmail").value.trim()
       });
       editUserModal.classList.add("is-hidden");
+      showToast("Usuário atualizado!", "success");
     } catch (err) {
-      showFeedback(editUserFeedback, "Não foi possível salvar. Tente novamente.");
+      showToast("Não foi possível salvar. Tente novamente.", "error");
     } finally {
       submitBtn.disabled = false;
     }
@@ -436,6 +448,7 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
     createdAt: Date.now()
   });
   logAction(`Criou a campanha "${titleValue}"`);
+  showToast("Campanha criada!", "success");
 
   e.target.reset();
   submitBtn.disabled = false;
@@ -446,7 +459,7 @@ function renderCampaignsTable() {
   const entries = Object.entries(campaignsCache);
 
   if (entries.length === 0) {
-    body.innerHTML = `<tr><td colspan="5">Nenhuma campanha cadastrada.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6">Nenhuma campanha cadastrada.</td></tr>`;
     return;
   }
 
@@ -509,6 +522,7 @@ function renderCampaignsTable() {
       const c = campaignsCache[sel.dataset.id];
       await update(ref(db, `campaigns/${sel.dataset.id}`), { status: sel.value });
       logAction(`Mudou status da campanha "${c.title}" para "${sel.value}"`);
+      showToast("Status atualizado.", "success");
     });
   });
 
@@ -518,6 +532,7 @@ function renderCampaignsTable() {
       await update(ref(db, `campaigns/${sel.dataset.id}`), { result: sel.value });
       if (sel.value) await finalizeParticipants(sel.dataset.id);
       logAction(`Registrou resultado da campanha "${c.title}": ${sel.value || "—"}`);
+      showToast("Resultado registrado.", "success");
     });
   });
 
@@ -529,6 +544,7 @@ function renderCampaignsTable() {
     btn.addEventListener("click", async () => {
       const c = campaignsCache[btn.dataset.id];
       await update(ref(db, `campaigns/${btn.dataset.id}`), { maxSlots: (c.maxSlots || 3) + 1 });
+      showToast("Vaga adicionada.", "success");
     });
   });
 
@@ -542,6 +558,7 @@ function renderCampaignsTable() {
         maxSlots: (c.maxSlots || 3) + 1,
         [`extraSlots/${uid}`]: u.name || u.email
       });
+      showToast(`Vaga extra concedida a ${u.name || u.email}.`, "success");
     });
   });
 
@@ -553,12 +570,14 @@ function renderCampaignsTable() {
       await update(ref(db, `campaigns/${sel.dataset.id}`), {
         [`participants/${uid}`]: u.name || u.email
       });
+      showToast(`${u.name || u.email} adicionado como participante.`, "success");
     });
   });
 
   body.querySelectorAll("button[data-action='remove-participant']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await remove(ref(db, `campaigns/${btn.dataset.id}/participants/${btn.dataset.uid}`));
+      showToast("Participante removido.", "success");
     });
   });
 
@@ -568,6 +587,7 @@ function renderCampaignsTable() {
       const c = campaignsCache[btn.dataset.id];
       await remove(ref(db, `campaigns/${btn.dataset.id}`));
       logAction(`Excluiu a campanha "${c.title}"`);
+      showToast("Campanha excluída.", "success");
     });
   });
 }
@@ -653,8 +673,9 @@ function bindEditCampaignModal() {
       });
       logAction(`Editou a campanha "${titleValue}"`);
       editCampaignModal.classList.add("is-hidden");
+      showToast("Campanha atualizada!", "success");
     } catch (err) {
-      showFeedback(editCampaignFeedback, "Não foi possível salvar. Tente novamente.");
+      showToast("Não foi possível salvar. Tente novamente.", "error");
     } finally {
       submitBtn.disabled = false;
     }
@@ -681,6 +702,7 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
 
   e.target.reset();
   submitBtn.disabled = false;
+  showToast("Publicação criada!", "success");
 });
 
 function renderPostsTable() {
@@ -717,6 +739,7 @@ function renderPostsTable() {
     btn.addEventListener("click", async () => {
       if (!confirm("Excluir esta publicação?")) return;
       await remove(ref(db, `posts/${btn.dataset.id}`));
+      showToast("Publicação excluída.", "success");
     });
   });
 }
@@ -763,8 +786,9 @@ function bindEditPostModal() {
         status: document.getElementById("epStatus").value
       });
       editPostModal.classList.add("is-hidden");
+      showToast("Publicação atualizada!", "success");
     } catch (err) {
-      showFeedback(editPostFeedback, "Não foi possível salvar. Tente novamente.");
+      showToast("Não foi possível salvar. Tente novamente.", "error");
     } finally {
       submitBtn.disabled = false;
     }
@@ -813,6 +837,7 @@ function renderValidationsTable() {
         await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { status: "aprovado" });
       }
       logAction(`Aprovou o comprovante de ${btn.dataset.name}`);
+      showToast("Comprovante aprovado!", "success");
     });
   });
 
@@ -823,6 +848,7 @@ function renderValidationsTable() {
         await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { status: "rejeitado" });
       }
       logAction(`Rejeitou o comprovante de ${btn.dataset.name}`);
+      showToast("Comprovante rejeitado.", "success");
     });
   });
 }
@@ -906,6 +932,7 @@ document.getElementById("raffleForm").addEventListener("submit", async (e) => {
     rules: document.getElementById("rRules").value.trim()
   });
   await update(ref(db, "metrics"), { bonusFund: Number(document.getElementById("rFund").value) || 0 });
+  showToast("Sorteio atualizado!", "success");
 });
 
 function renderRaffleAdmin() {
@@ -969,6 +996,7 @@ document.getElementById("notifForm").addEventListener("submit", async (e) => {
     createdAt: Date.now()
   });
   logAction(`Enviou o aviso "${titleValue}"`);
+  showToast("Aviso enviado!", "success");
 
   e.target.reset();
   submitBtn.disabled = false;
@@ -1000,6 +1028,7 @@ function renderNotifsTable() {
       if (!confirm("Excluir este aviso?")) return;
       await remove(ref(db, `notifications/${btn.dataset.id}`));
       logAction(`Excluiu o aviso "${btn.dataset.title}"`);
+      showToast("Aviso excluído.", "success");
     });
   });
 }
@@ -1050,14 +1079,37 @@ function formatDateRange(start, end) {
   return `${s} — ${e}`;
 }
 
-function showFeedback(el, message) {
-  el.textContent = message;
-  el.hidden = false;
-}
-
 function hideFeedback(el) {
   el.hidden = true;
   el.textContent = "";
+}
+
+/* ---------- Toasts ---------- */
+
+const toastContainer = document.getElementById("toastContainer");
+
+function showToast(message, type = "success") {
+  const iconId = type === "success" ? "icon-check-circle" : "icon-alert";
+
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <svg class="icon"><use href="#${iconId}"></use></svg>
+    <span class="toast-message">${escapeHtml(message)}</span>
+  `;
+
+  toast.addEventListener("click", () => dismissToast(toast));
+  toastContainer.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add("is-visible"));
+
+  setTimeout(() => dismissToast(toast), 4000);
+}
+
+function dismissToast(toast) {
+  if (!toast.isConnected) return;
+  toast.classList.remove("is-visible");
+  setTimeout(() => toast.remove(), 300);
 }
 
 function linesToArray(text) {
