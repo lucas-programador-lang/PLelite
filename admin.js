@@ -529,10 +529,17 @@ function renderCampaignsTable() {
   body.querySelectorAll("select[data-action='result']").forEach((sel) => {
     sel.addEventListener("change", async () => {
       const c = campaignsCache[sel.dataset.id];
-      await update(ref(db, `campaigns/${sel.dataset.id}`), { result: sel.value });
+      const updates = { result: sel.value };
+      // Registrar um resultado significa que a campanha acabou — move ela
+      // pra "concluída" automaticamente, senão o Resultado fica "preso"
+      // numa campanha que continua marcada como ativa/andamento.
+      if (sel.value && c.status !== "concluida" && c.status !== "cancelada") {
+        updates.status = "concluida";
+      }
+      await update(ref(db, `campaigns/${sel.dataset.id}`), updates);
       if (sel.value) await finalizeParticipants(sel.dataset.id);
       logAction(`Registrou resultado da campanha "${c.title}": ${sel.value || "—"}`);
-      showToast("Resultado registrado.", "success");
+      showToast("Resultado registrado — campanha movida para Concluídas.", "success");
     });
   });
 
@@ -797,6 +804,21 @@ function bindEditPostModal() {
 
 /* ---------- Validações (comprovantes) ---------- */
 
+/* ---------- Modal: visualizar print ---------- */
+
+const imageModal = document.getElementById("imageModal");
+const imageModalImg = document.getElementById("imageModalImg");
+
+function openImageModal(src) {
+  imageModalImg.src = src;
+  imageModal.classList.remove("is-hidden");
+}
+
+document.getElementById("imageModalClose").addEventListener("click", () => {
+  imageModal.classList.add("is-hidden");
+  imageModalImg.src = "";
+});
+
 function renderValidationsTable() {
   const body = document.getElementById("validationsTableBody");
   const entries = Object.entries(validationsCache);
@@ -819,35 +841,46 @@ function renderValidationsTable() {
         <td>${escapeHtml(v.campaignTitle || "—")}</td>
         <td>${formatDateRange(v.startDate, v.endDate)}</td>
         <td>${escapeHtml(v.notes || "—")}</td>
-        <td>${v.imageBase64 ? `<a href="${v.imageBase64}" target="_blank" rel="noopener">Ver print</a>` : "—"}</td>
+        <td>${v.imageBase64 ? `<button type="button" class="btn-mini" data-action="view-print" data-id="${id}">Ver print</button>` : "—"}</td>
         <td>${statusTag}</td>
         <td>
           <div class="row-actions">
-            <button class="btn-mini success" data-action="approve" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}" data-uid="${v.userId || ""}">Aprovar</button>
-            <button class="btn-mini danger" data-action="reject" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}" data-uid="${v.userId || ""}">Rejeitar</button>
+            <button class="btn-mini success" data-action="approve" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}" data-uid="${v.userId || ""}" data-campaign="${v.campaignId || ""}">Aprovar</button>
+            <button class="btn-mini danger" data-action="reject" data-id="${id}" data-name="${escapeHtml(v.userName || v.userId || "—")}" data-uid="${v.userId || ""}" data-campaign="${v.campaignId || ""}">Rejeitar</button>
           </div>
         </td>
       </tr>`;
   }).join("");
 
+  body.querySelectorAll("button[data-action='view-print']").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const v = validationsCache[btn.dataset.id];
+      if (v && v.imageBase64) openImageModal(v.imageBase64);
+    });
+  });
+
   body.querySelectorAll("button[data-action='approve']").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      await update(ref(db, `validations/${btn.dataset.id}`), { status: "aprovado" });
-      if (btn.dataset.uid) {
-        await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { status: "aprovado" });
-      }
-      logAction(`Aprovou o comprovante de ${btn.dataset.name}`);
-      showToast("Comprovante aprovado!", "success");
+      const { id, uid, campaign, name } = btn.dataset;
+      const updates = { [`validations/${id}/status`]: "aprovado" };
+      if (uid) updates[`users/${uid}/myValidations/${id}/status`] = "aprovado";
+      // Aprovar o comprovante ocupa a vaga na campanha de verdade.
+      if (uid && campaign) updates[`campaigns/${campaign}/participants/${uid}`] = name;
+      await update(ref(db), updates);
+      logAction(`Aprovou o comprovante de ${name}`);
+      showToast("Comprovante aprovado! Vaga preenchida na campanha.", "success");
     });
   });
 
   body.querySelectorAll("button[data-action='reject']").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      await update(ref(db, `validations/${btn.dataset.id}`), { status: "rejeitado" });
-      if (btn.dataset.uid) {
-        await update(ref(db, `users/${btn.dataset.uid}/myValidations/${btn.dataset.id}`), { status: "rejeitado" });
-      }
-      logAction(`Rejeitou o comprovante de ${btn.dataset.name}`);
+      const { id, uid, campaign, name } = btn.dataset;
+      const updates = { [`validations/${id}/status`]: "rejeitado" };
+      if (uid) updates[`users/${uid}/myValidations/${id}/status`] = "rejeitado";
+      // Se essa pessoa já tinha sido aprovada antes (admin corrigindo), libera a vaga de volta.
+      if (uid && campaign) updates[`campaigns/${campaign}/participants/${uid}`] = null;
+      await update(ref(db), updates);
+      logAction(`Rejeitou o comprovante de ${name}`);
       showToast("Comprovante rejeitado.", "success");
     });
   });
