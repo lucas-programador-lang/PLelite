@@ -278,6 +278,8 @@ function buildCampaignCard(c) {
       <span class="status-tag ${statusClass}">${escapeHtml(statusLabel)}</span>
     </div>
 
+    ${c.result ? `<span class="status-tag ${c.result === "sucesso" ? "status-ativa" : "status-cancelada"}">${c.result === "sucesso" ? "🟢 Sucesso" : "🔴 Prejuízo"}</span>` : ""}
+
     <p class="campaign-desc">${escapeHtml(c.description || "")}</p>
     ${c.machines ? `<p style="font-size:11.5px;color:var(--text-muted);margin:-4px 0 0;">🛠️ Máquinas/planos: ${escapeHtml(c.machines)}</p>` : ""}
 
