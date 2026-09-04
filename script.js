@@ -1,276 +1,716 @@
-// ==========================================================
-// AFERA CONFEITARIA — dados do cardápio + interações
-// ==========================================================
+// ===================================================================
+// PL ELITE — script.js
+// Usado apenas por index.html (dashboard).
+// Protege a rota (isAuthorized) e mantém tudo em tempo real via
+// onValue() do Realtime Database — a tela atualiza sozinha assim que
+// o dado muda no banco, sem precisar recarregar a página.
+// ===================================================================
 
-const WHATS_NUMBER = "5585986304780";
+import { auth, db } from "./firebase-config.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-function waLink(itemName, price){
-  const msg = `Olá! Quero pedir: ${itemName} (${price}).`;
-  return `https://wa.me/${WHATS_NUMBER}?text=${encodeURIComponent(msg)}`;
+const sidebarUserNameEl = document.getElementById("sidebarUserName");
+const sidebarAvatarEl = document.getElementById("sidebarAvatar");
+
+function updateSidebarUser(name) {
+  sidebarUserNameEl.textContent = name;
+  sidebarAvatarEl.textContent = (name || "?").trim().charAt(0).toUpperCase();
+}
+const logoutBtn = document.getElementById("logoutBtn");
+
+const gatePending = document.getElementById("gatePending");
+const gateBlocked = document.getElementById("gateBlocked");
+const dashboardContent = document.getElementById("dashboardContent");
+
+const metricRewards = document.getElementById("metricRewards");
+const metricBonusFund = document.getElementById("metricBonusFund");
+const metricActiveUsers = document.getElementById("metricActiveUsers");
+const metricActiveCampaigns = document.getElementById("metricActiveCampaigns");
+
+const raffleInfoEl = document.getElementById("raffleInfo");
+const postsGridEl = document.getElementById("postsGrid");
+const postsCountEl = document.getElementById("postsCount");
+
+const activeCampaignsEl = document.getElementById("activeCampaigns");
+const andamentoCampaignsEl = document.getElementById("andamentoCampaigns");
+const completedCampaignsEl = document.getElementById("completedCampaigns");
+const activeCountEl = document.getElementById("activeCount");
+const andamentoCountEl = document.getElementById("andamentoCount");
+const completedCountEl = document.getElementById("completedCount");
+
+const STATUS_LABELS = {
+  ativa: "Ativa",
+  andamento: "Em andamento",
+  concluida: "Meta atingida",
+  cancelada: "Cancelada"
+};
+
+const STATUS_CLASSES = {
+  ativa: "status-ativa",
+  andamento: "status-andamento",
+  concluida: "status-concluida",
+  cancelada: "status-cancelada"
+};
+
+const POST_CATEGORY_LABELS = {
+  destaque: "Campanhas em Destaque",
+  oportunidades: "Oportunidades",
+  andamento: "Em Andamento",
+  concluidas: "Concluídas"
+};
+
+const GENERIC_WHATSAPP_URL = "https://wa.me/5568999503477?text=vim%20pelo%20o%20site%20tenho%20interesse%20em%20saber%20mais%20informa%C3%A7%C3%B5es%20sobre%20a%20plataforma";
+
+let currentUser = null;
+let currentUserName = "";
+let currentUserReferredBy = null;
+let listenersAttached = false;
+let accountFormPrefilled = false;
+
+// Caches locais alimentados pelos listeners onValue — as funções de
+// render leem daqui, então qualquer listener que muda pode disparar
+// o render de tudo que depende dele.
+let campaignsCache = {};
+let metricsCache = {};
+let raffleCache = {};
+let raffleEntriesCache = {};
+
+/* ---------- Sidebar (navegação entre "páginas" + gaveta no mobile) ---------- */
+
+const sidebarEl = document.getElementById("sidebar");
+const sidebarOverlayEl = document.getElementById("sidebarOverlay");
+const sidebarToggleEl = document.getElementById("sidebarToggle");
+const sidebarCloseEl = document.getElementById("sidebarClose");
+
+function openSidebar() {
+  sidebarEl.classList.add("is-open");
+  sidebarOverlayEl.classList.add("is-open");
 }
 
-const PLACEHOLDER_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z"/><path d="M3 10a4 4 0 0 1 4-4c1.2 0 1.8.7 2.5.7S10.8 6 12 6s1.8.7 2.5.7S15.8 6 17 6a4 4 0 0 1 4 4"/><path d="M12 6V3"/></svg>`;
-
-function thumb(item, sizeClass){
-  const inner = item.photo
-    ? `<img src="${item.photo}" alt="${item.name}" loading="lazy">`
-    : PLACEHOLDER_ICON;
-  return `<div class="${sizeClass}">${inner}</div>`;
+function closeSidebar() {
+  sidebarEl.classList.remove("is-open");
+  sidebarOverlayEl.classList.remove("is-open");
 }
 
-function priceParts(price){
-  // "R$ 145,00" -> { whole: "145", cents: "00" }
-  const match = price.match(/R\$\s*([\d.]+),(\d{2})/);
-  if (!match) return { whole: price, cents: "" };
-  return { whole: match[1], cents: match[2] };
-}
+sidebarToggleEl.addEventListener("click", openSidebar);
+sidebarCloseEl.addEventListener("click", closeSidebar);
+sidebarOverlayEl.addEventListener("click", closeSidebar);
 
-// ---------- dados ----------
-//
-// Pra colocar uma foto em qualquer item, adicione a propriedade "photo"
-// com o caminho do arquivo, ex:
-//   { name: "Kit 3", ..., photo: "img/kit-3.jpg" }
-// Sem essa propriedade, o item mostra o ícone de bolo como espaço reservado.
+document.querySelectorAll(".sidebar-link[data-view]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".sidebar-link[data-view]").forEach((b) => b.classList.remove("is-active"));
+    document.querySelectorAll(".app-view").forEach((v) => v.classList.remove("is-active"));
+    btn.classList.add("is-active");
+    document.getElementById(`view-${btn.dataset.view}`).classList.add("is-active");
+    closeSidebar();
+  });
+});
 
-const kits = [
-  {
-    name: "Bolo + Salgados",
-    serves: "Até 15 pessoas",
-    desc: "Bolo de 10 fatias com 50 salgados variados. Ideal para festas menores.",
-    price: "R$ 95,00"
-  },
-  {
-    name: "Kit Mini Bolo",
-    serves: "Até 20 pessoas",
-    desc: "Bolo de 10 fatias com 100 salgados variados.",
-    price: "R$ 120,00"
-  },
-  {
-    name: "Mini Kit Completo",
-    serves: "Até 20 pessoas",
-    desc: "Bolo de 12 fatias com topo impresso incluso, 50 salgados, 30 doces, 4 cupcakes e refrigerante de 1 litro.",
-    price: "R$ 145,00",
-    featured: true,
-    tag: "o mais pedido da casa"
-  },
-  {
-    name: "Kit 1",
-    serves: "Sob consulta",
-    desc: "Kit festa tamanho intermediário — consulte a composição completa pelo WhatsApp.",
-    price: "R$ 163,00"
-  },
-  {
-    name: "Kit 2",
-    serves: "Até 35 pessoas",
-    desc: "Bolo de 20 fatias com 200 salgados variados.",
-    price: "R$ 195,00"
-  },
-  {
-    name: "Kit 1 Completo",
-    serves: "Até 35 pessoas",
-    desc: "Bolo de 20 fatias com topo impresso incluso, 100 salgados, 50 doces e refrigerante de 2 litros.",
-    price: "R$ 197,00"
-  },
-  {
-    name: "Kit 3",
-    serves: "Até 50 pessoas",
-    desc: "Bolo de 30 fatias com topo impresso incluso e 200 salgados variados.",
-    price: "R$ 225,00",
-    featured: true,
-    tag: "para festas grandes"
+/* ---------- Guarda de rota (em tempo real: reage a bloqueio/autorização ao vivo) ---------- */
+
+logoutBtn.addEventListener("click", () => signOut(auth));
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
   }
-];
 
-const bolosAvulsos = [
-  { name: "Bolo 10 fatias", note: "Até 12 pessoas", price: "R$ 75,00" },
-  { name: "Bolo 20 fatias", note: "Até 22 pessoas", price: "R$ 115,00" },
-  { name: "Bolo 30 fatias", note: "Até 33 pessoas", price: "R$ 145,00" },
-  { name: "Bolo 40 fatias", note: "Até 44 pessoas", price: "R$ 180,00" },
-  { name: "Bolo 50 fatias", note: "Até 55 pessoas", price: "R$ 260,00" }
-];
+  onValue(ref(db, `users/${user.uid}`), (snap) => {
+    const userData = snap.exists() ? snap.val() : null;
 
-const extraCategories = [
-  {
-    title: "Salgados e doces avulsos",
-    items: [
-      { name: "100 salgados variados", note: "Avulso", price: "R$ 40,00" },
-      { name: "100 doces variados", note: "Avulso", price: "R$ 70,00" }
-    ]
-  },
-  {
-    title: "Porções de salgados fritos",
-    items: [
-      { name: "Porção de salgados fritos", note: "25 unidades", price: "R$ 10,00" },
-      { name: "Porção de salgados fritos", note: "37 unidades", price: "R$ 15,00" },
-      { name: "Porção de salgados fritos", note: "50 unidades", price: "R$ 20,00" }
-    ]
+    if (!userData || userData.isBlocked) {
+      show(gateBlocked);
+      return;
+    }
+
+    if (!userData.isAuthorized) {
+      show(gatePending);
+      return;
+    }
+
+    currentUser = user;
+    currentUserName = userData.name || user.email;
+    currentUserReferredBy = userData.referredBy || null;
+    updateSidebarUser(currentUserName);
+
+    // Só preenche o formulário de "Minha Conta" na primeira vez — assim não
+    // apaga o que a pessoa está digitando se o registro mudar em tempo real.
+    if (!accountFormPrefilled) {
+      document.getElementById("accName").value = userData.name || "";
+      document.getElementById("accEmail").value = userData.email || "";
+      accountFormPrefilled = true;
+    }
+
+    show(dashboardContent);
+
+    if (!listenersAttached) {
+      attachRealtimeListeners();
+      listenersAttached = true;
+    }
+  });
+});
+
+function show(panel) {
+  [gatePending, gateBlocked, dashboardContent].forEach((p) => p.classList.add("is-hidden"));
+  panel.classList.remove("is-hidden");
+}
+
+/* ---------- Listeners em tempo real ---------- */
+
+function attachRealtimeListeners() {
+  onValue(ref(db, "campaigns"), (snap) => {
+    campaignsCache = snap.exists() ? snap.val() : {};
+    renderMetrics();
+    renderCampaigns();
+    renderRaffleInfo();
+  });
+
+  onValue(ref(db, "metrics"), (snap) => {
+    metricsCache = snap.exists() ? snap.val() : {};
+    renderMetrics();
+  });
+
+  onValue(ref(db, "raffle"), (snap) => {
+    raffleCache = snap.exists() ? snap.val() : {};
+    renderRaffleInfo();
+  });
+
+  onValue(ref(db, "raffleEntries"), (snap) => {
+    raffleEntriesCache = snap.exists() ? snap.val() : {};
+    renderRaffleInfo();
+  });
+
+  onValue(ref(db, "posts"), (snap) => {
+    renderPosts(snap.exists() ? snap.val() : {});
+  });
+
+  onValue(ref(db, "notifications"), (snap) => {
+    renderNotifications(snap.exists() ? snap.val() : {});
+  });
+
+  onValue(ref(db, `users/${currentUser.uid}/myValidations`), (snap) => {
+    renderMyHistory(snap.exists() ? snap.val() : {});
+  });
+}
+
+/* ---------- Métricas + campanhas ---------- */
+
+function renderMetrics() {
+  const campaigns = Object.values(campaignsCache);
+
+  // Total pago em patrocínios: soma do orçamento das campanhas já finalizadas
+  // (com resultado registrado, 🟢 ou 🔴) — dinheiro que já foi de fato pago.
+  const totalPago = campaigns
+    .filter((c) => c.result)
+    .reduce((sum, c) => sum + (c.budget || 0), 0);
+
+  // Usuários participantes: contagem de pessoas distintas presentes em
+  // "participants" de qualquer campanha (dado real, não estimado).
+  const participantUids = new Set();
+  campaigns.forEach((c) => {
+    if (c.participants) Object.keys(c.participants).forEach((uid) => participantUids.add(uid));
+  });
+
+  metricRewards.textContent = formatCurrency(totalPago);
+  metricBonusFund.textContent = formatCurrency(metricsCache.bonusFund || 0);
+  metricActiveUsers.textContent = participantUids.size;
+}
+
+function renderCampaigns() {
+  if (!currentUser) return;
+
+  const campaigns = Object.entries(campaignsCache)
+    .map(([id, c]) => ({ id, ...c }))
+    // Esconde campanhas restritas a um grupo específico de usuários (definido
+    // pelo admin em "Visível só para") de quem não está na lista. Isso é
+    // filtro de interface, não trava de banco — ver aviso no chat.
+    .filter((c) => !c.visibleTo || c.visibleTo[currentUser.uid]);
+
+  const active = campaigns.filter((c) => c.status === "ativa");
+  const andamento = campaigns.filter((c) => c.status === "andamento");
+  const completed = campaigns.filter((c) => c.status === "concluida" || c.status === "cancelada");
+
+  metricActiveCampaigns.textContent = active.length + andamento.length;
+  activeCountEl.textContent = `${active.length} campanha${active.length === 1 ? "" : "s"}`;
+  andamentoCountEl.textContent = `${andamento.length} campanha${andamento.length === 1 ? "" : "s"}`;
+  completedCountEl.textContent = `${completed.length} campanha${completed.length === 1 ? "" : "s"}`;
+
+  renderGrid(activeCampaignsEl, active, "Nenhuma campanha ativa no momento.");
+  renderGrid(andamentoCampaignsEl, andamento, "Nenhuma campanha em andamento no momento.");
+  renderGrid(completedCampaignsEl, completed, "Nenhuma campanha concluída ainda.");
+}
+
+function renderGrid(container, campaigns, emptyMessage) {
+  container.innerHTML = "";
+
+  if (campaigns.length === 0) {
+    container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+    return;
   }
-];
 
-const congelados = [
-  { name: "Empadão de frango", note: "Unidade", price: "R$ 70,00" },
-  { name: "Salgados congelados", note: "Coxinha, bola de queijo, misto e carne — 50 unidades", price: "R$ 18,00" }
-];
+  campaigns.forEach((c) => container.appendChild(buildCampaignCard(c)));
+}
 
-// ---------- render ----------
+function buildCampaignCard(c) {
+  const card = document.createElement("article");
+  card.className = "campaign-card";
 
-function renderKits(){
-  const panel = document.getElementById("kits-grid");
-  panel.innerHTML = kits.map(k => {
-    const p = priceParts(k.price);
-    return `
-    <article class="kit-row ${k.featured ? "is-featured" : ""}">
-      <div class="kit-row-main">
-        ${thumb(k, "kit-row-thumb")}
-        <div class="kit-row-heading">
-          <h3>${k.name}</h3>
-          ${k.tag ? `<span class="kit-row-tag">— ${k.tag}</span>` : ""}
-        </div>
-        <p class="kit-row-serves">${k.serves}</p>
-        <p class="kit-row-desc">${k.desc}</p>
+  const filled = c.participants ? Object.keys(c.participants).length : (c.filledSlots || 0);
+  const max = c.maxSlots || 3;
+  const pct = Math.min(100, Math.round((filled / max) * 100));
+  const isActive = c.status === "ativa" || c.status === "andamento";
+
+  const statusClass = STATUS_CLASSES[c.status] || "status-ativa";
+  const statusLabel = STATUS_LABELS[c.status] || c.status;
+
+  const whatsappHref = c.whatsappNumber
+    ? `https://wa.me/${c.whatsappNumber}?text=${encodeURIComponent(c.whatsappMessage || "Tenho interesse nesta campanha")}`
+    : c.redirectLink || "#";
+
+  card.innerHTML = `
+    <div class="campaign-top">
+      <div>
+        <span class="campaign-category">${escapeHtml(c.category || "CAMPANHA")}</span>
+        <h3 class="campaign-title">${escapeHtml(c.title || "Sem título")}</h3>
       </div>
-      <div class="kit-row-side">
-        <p class="kit-row-price"><span class="cur">R$</span>${p.whole}<span class="cents">,${p.cents}</span></p>
-        <a class="kit-row-cta" href="${waLink(k.name, k.price)}" target="_blank" rel="noopener" aria-label="Pedir ${k.name} no WhatsApp">
-          Pedir no WhatsApp
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </a>
-      </div>
-    </article>
+      <span class="status-tag ${statusClass}">${escapeHtml(statusLabel)}</span>
+    </div>
+
+    ${c.result ? `<span class="status-tag ${c.result === "sucesso" ? "status-ativa" : "status-cancelada"}">${c.result === "sucesso" ? "🟢 Sucesso" : "🔴 Prejuízo"}</span>` : ""}
+
+    <p class="campaign-desc">${escapeHtml(c.description || "")}</p>
+    ${c.machines ? `<p style="font-size:11.5px;color:var(--text-muted);margin:-4px 0 0;">🛠️ Máquinas/planos: ${escapeHtml(c.machines)}</p>` : ""}
+
+    <div class="campaign-progress">
+      <div class="campaign-progress-bar" style="width:${pct}%"></div>
+    </div>
+    <div class="campaign-meta">
+      <span>${filled}/${max} vagas</span>
+      <span>${formatDateRange(c.startDate, c.endDate)}</span>
+    </div>
+
+    <div class="campaign-actions">
+      <a class="btn-whatsapp" href="${whatsappHref}" target="_blank" rel="noopener">Participar via WhatsApp</a>
+    </div>
+    ${isActive ? `<button type="button" class="btn-mini btn-block" data-action="send-proof" data-id="${c.id}" data-title="${escapeHtml(c.title || "")}">Enviar comprovante</button>` : ""}
   `;
-  }).join("");
+
+  return card;
 }
 
-function renderBolos(){
-  const panel = document.getElementById("bolos-table");
-  panel.innerHTML = bolosAvulsos.map(b => `
-    <a class="menu-row" href="${waLink(b.name, b.price)}" target="_blank" rel="noopener">
-      <div class="menu-row-left-wrap">
-        ${thumb(b, "menu-row-thumb")}
-        <div class="menu-row-left">
-          <span class="menu-row-name">${b.name}</span>
-          <span class="menu-row-note">${b.note}</span>
-        </div>
-      </div>
-      <span class="menu-row-price">${b.price}</span>
-    </a>
-  `).join("");
-}
+/* ---------- Sorteio ---------- */
 
-function extraRow(e){
-  return `
-    <a class="menu-row" href="${waLink(e.name + (e.note ? " — " + e.note : ""), e.price)}" target="_blank" rel="noopener">
-      <div class="menu-row-left-wrap">
-        ${thumb(e, "menu-row-thumb")}
-        <div class="menu-row-left">
-          <span class="menu-row-name">${e.name}</span>
-          <span class="menu-row-note">${e.note}</span>
-        </div>
-      </div>
-      <span class="menu-row-price">${e.price}</span>
-    </a>
+function renderRaffleInfo() {
+  if (!currentUser) return;
+
+  const raffle = raffleCache;
+  const entriesObj = raffleEntriesCache;
+  const entries = Object.values(entriesObj);
+  const isEligible = !!currentUserReferredBy;
+  const alreadyEntered = !!entriesObj[currentUser.uid];
+
+  // "Quem participou do sorteio" (raffleEntries) é diferente de "quem foi
+  // patrocinado" (participants em qualquer campaign) — dados distintos.
+  const campaigns = Object.values(campaignsCache);
+  const patrocinadosSet = new Set();
+  campaigns.forEach((c) => {
+    if (c.participants) Object.values(c.participants).forEach((name) => patrocinadosSet.add(name));
+  });
+  const patrocinadosList = patrocinadosSet.size
+    ? [...patrocinadosSet].map((n) => escapeHtml(n)).join(", ")
+    : "Ninguém patrocinado ainda.";
+
+  const participantsList = entries.length
+    ? entries.map((u) => escapeHtml(u.name || u.email || "—")).join(", ")
+    : "Ninguém participando do sorteio ainda.";
+
+  const joinButton = alreadyEntered
+    ? `<span class="status-tag status-ativa" style="display:inline-block;margin-top:8px;">Você já está participando</span>`
+    : isEligible
+    ? `<button type="button" class="btn-mini success" id="raffleJoinBtn" style="margin-top:8px;">Participar do sorteio</button>`
+    : "";
+
+  raffleInfoEl.innerHTML = `
+    <div class="metric-card">
+      <span class="metric-label">VALOR ARRECADADO</span>
+      <span class="metric-value">${formatCurrency(raffle.fund || 0)}</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">DATA DO SORTEIO</span>
+      <span class="metric-value" style="font-size:19px;">${raffle.date ? new Date(raffle.date).toLocaleDateString("pt-BR") : "A definir"}</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">RESULTADO</span>
+      <span class="metric-value" style="font-size:19px;">${raffle.winner ? escapeHtml(raffle.winner) : "Ainda não realizado"}</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">SUA ELEGIBILIDADE</span>
+      <span class="status-tag ${isEligible ? "status-ativa" : "status-cancelada"}" style="display:inline-block;">
+        ${isEligible ? "Elegível" : "Não elegível"}
+      </span>
+      ${!isEligible ? `<p style="font-size:11px;color:var(--text-muted);margin:8px 0 0;">Somente quem entrou pelo link de indicação participa.</p>` : ""}
+      ${joinButton}
+    </div>
+    <div class="metric-card" style="grid-column:1 / -1;">
+      <span class="metric-label">QUEM PARTICIPOU DO SORTEIO</span>
+      <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${participantsList}</span>
+    </div>
+    <div class="metric-card" style="grid-column:1 / -1;">
+      <span class="metric-label">QUEM FOI PATROCINADO</span>
+      <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${patrocinadosList}</span>
+    </div>
+    <div class="metric-card" style="grid-column:1 / -1;">
+      <span class="metric-label">REGRAS</span>
+      <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${raffle.rules ? escapeHtml(raffle.rules) : "A definir pelo administrador."}</span>
+    </div>
   `;
+
+  const joinBtn = document.getElementById("raffleJoinBtn");
+  if (joinBtn) {
+    joinBtn.addEventListener("click", async () => {
+      joinBtn.disabled = true;
+      try {
+        await set(ref(db, `raffleEntries/${currentUser.uid}`), {
+          name: currentUserName,
+          email: currentUser.email,
+          joinedAt: Date.now()
+        });
+        // Não precisa recarregar manualmente — o listener onValue de
+        // raffleEntries já vai disparar e re-renderizar sozinho.
+        showToast("Você entrou no sorteio!", "success");
+      } catch (err) {
+        joinBtn.disabled = false;
+        showToast("Não foi possível entrar no sorteio. Tente novamente.", "error");
+      }
+    });
+  }
 }
 
-function renderExtras(){
-  const wrap = document.getElementById("extras-wrap");
-  wrap.innerHTML = extraCategories.map(cat => `
-    <div class="extra-category">
-      <h3 class="extra-category-title">${cat.title}</h3>
-      <div class="menu-panel">
-        ${cat.items.map(extraRow).join("")}
+/* ---------- Minha Conta ---------- */
+
+document.getElementById("accountForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const submitBtn = document.getElementById("accountSubmit");
+  submitBtn.disabled = true;
+
+  const newName = document.getElementById("accName").value.trim();
+  const newEmail = document.getElementById("accEmail").value.trim();
+
+  try {
+    await update(ref(db, `users/${currentUser.uid}`), { name: newName, email: newEmail });
+    currentUserName = newName;
+    updateSidebarUser(newName);
+    showToast("Dados atualizados!", "success");
+  } catch (err) {
+    showToast("Não foi possível salvar. Tente novamente.", "error");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+function renderMyHistory(validations) {
+  const listEl = document.getElementById("myHistoryList");
+  const mine = Object.values(validations).sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+
+  if (mine.length === 0) {
+    listEl.innerHTML = `<p class="empty-state">Você ainda não enviou nenhum comprovante.</p>`;
+    return;
+  }
+
+  const HISTORY_STATUS_LABELS = {
+    aprovado: `<span class="status-tag status-ativa">Aprovado</span>`,
+    rejeitado: `<span class="status-tag status-cancelada">Rejeitado</span>`,
+    pendente: `<span class="status-tag status-andamento">Pendente</span>`
+  };
+
+  listEl.innerHTML = mine.map((v) => `
+    <div class="campaign-card" style="margin-bottom:10px;">
+      <div class="campaign-top">
+        <h3 class="campaign-title" style="font-size:15px;">${escapeHtml(v.campaignTitle || "—")}</h3>
+        ${v.participantFinalized
+          ? `<span class="status-tag status-concluida">✅ FINALIZADO</span>`
+          : (HISTORY_STATUS_LABELS[v.status] || HISTORY_STATUS_LABELS.pendente)}
+      </div>
+      <div class="campaign-meta">
+        <span>${v.startDate ? new Date(v.startDate).toLocaleDateString("pt-BR") : "—"} — ${v.endDate ? new Date(v.endDate).toLocaleDateString("pt-BR") : "—"}</span>
+        <span>${v.withdrawalDone ? "Saque feito" : "Saque pendente"}</span>
       </div>
     </div>
   `).join("");
 }
 
-function renderFrozen(){
-  const panel = document.getElementById("frozen-grid");
-  panel.innerHTML = congelados.map(extraRow).join("");
+/* ---------- Publicações ---------- */
+
+function renderPosts(postsObj) {
+  const entries = Object.entries(postsObj)
+    .map(([id, p]) => ({ id, ...p }))
+    .filter((p) => !p.status || p.status === "publicado")
+    .sort((a, b) => (b.date || 0) - (a.date || 0));
+
+  postsCountEl.textContent = `${entries.length} publicaç${entries.length === 1 ? "ão" : "ões"}`;
+  postsGridEl.innerHTML = "";
+
+  if (entries.length === 0) {
+    postsGridEl.innerHTML = `<p class="empty-state">Nenhuma publicação por enquanto.</p>`;
+    return;
+  }
+
+  entries.forEach((p) => postsGridEl.appendChild(buildPostCard(p)));
 }
 
-renderKits();
-renderBolos();
-renderExtras();
-renderFrozen();
+function buildPostCard(p) {
+  const card = document.createElement("article");
+  card.className = "campaign-card";
 
-document.getElementById("year").textContent = new Date().getFullYear();
+  const images = p.images || (p.imageUrl ? [p.imageUrl] : []);
+  const categoryLabel = POST_CATEGORY_LABELS[p.category] || p.category || "PUBLICAÇÃO";
+  const date = p.date ? new Date(p.date).toLocaleDateString("pt-BR") : "";
 
-// ---------- menu mobile ----------
+  card.innerHTML = `
+    <div class="campaign-top">
+      <div>
+        <span class="campaign-category">${escapeHtml(categoryLabel)}</span>
+        <h3 class="campaign-title">${escapeHtml(p.title || "Sem título")}</h3>
+      </div>
+    </div>
 
-(function mobileNav(){
-  const toggle = document.getElementById("nav-toggle");
-  const menu = document.getElementById("nav-mobile");
-  if (!toggle || !menu) return;
+    ${images[0] ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(p.title || "")}" style="width:100%;border-radius:var(--radius-md);display:block;">` : ""}
 
-  function closeMenu(){
-    menu.classList.remove("is-open");
-    toggle.setAttribute("aria-expanded", "false");
+    <p class="campaign-desc">${escapeHtml(p.description || "")}</p>
+
+    <div class="campaign-meta">
+      <span>${date}</span>
+    </div>
+
+    <div class="campaign-actions">
+      ${p.redirectLink ? `<a class="btn-whatsapp" href="${escapeHtml(p.redirectLink)}" target="_blank" rel="noopener">Ver plataforma</a>` : ""}
+      <a class="btn-whatsapp" href="${GENERIC_WHATSAPP_URL}" target="_blank" rel="noopener">Chamar no WhatsApp</a>
+    </div>
+  `;
+
+  return card;
+}
+
+/* ---------- Modal: enviar comprovante ---------- */
+
+const proofModal = document.getElementById("proofModal");
+const proofForm = document.getElementById("proofForm");
+const proofCampaignTitle = document.getElementById("proofCampaignTitle");
+const proofFeedback = document.getElementById("proofFeedback");
+const proofCancel = document.getElementById("proofCancel");
+
+let proofCampaignId = null;
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action='send-proof']");
+  if (!btn) return;
+  proofCampaignId = btn.dataset.id;
+  proofCampaignTitle.textContent = btn.dataset.title;
+  hideProofFeedback();
+  proofForm.reset();
+  proofModal.classList.remove("is-hidden");
+});
+
+proofCancel.addEventListener("click", () => proofModal.classList.add("is-hidden"));
+
+proofForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideProofFeedback();
+
+  const submitBtn = document.getElementById("proofSubmit");
+  const fileInput = document.getElementById("proofFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    showProofFeedback("Selecione uma imagem do comprovante.");
+    return;
   }
 
-  toggle.addEventListener("click", () => {
-    const isOpen = menu.classList.toggle("is-open");
-    toggle.setAttribute("aria-expanded", String(isOpen));
-  });
+  submitBtn.disabled = true;
+  submitBtn.classList.add("is-loading");
 
-  menu.querySelectorAll("a").forEach(a => a.addEventListener("click", closeMenu));
+  try {
+    const imageBase64 = await fileToBase64(file);
 
-  window.addEventListener("resize", () => {
-    if (window.innerWidth > 860) closeMenu();
-  });
-})();
+    const newRef = push(ref(db, "validations"));
+    const campaignTitleValue = proofCampaignTitle.textContent;
+    const startDateValue = document.getElementById("proofStart").value;
+    const endDateValue = document.getElementById("proofEnd").value;
 
-// ---------- hero canvas: partículas de "açúcar" flutuando ----------
-
-(function heroParticles(){
-  const canvas = document.getElementById("hero-canvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  let w, h, particles;
-  const COUNT = 40;
-
-  function resize(){
-    w = canvas.width = canvas.offsetWidth * devicePixelRatio;
-    h = canvas.height = canvas.offsetHeight * devicePixelRatio;
-  }
-
-  function initParticles(){
-    particles = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      r: (Math.random() * 1.8 + 0.6) * devicePixelRatio,
-      speed: (Math.random() * 0.25 + 0.06) * devicePixelRatio,
-      drift: (Math.random() - 0.5) * 0.15 * devicePixelRatio,
-      alpha: Math.random() * 0.5 + 0.15
-    }));
-  }
-
-  function draw(){
-    ctx.clearRect(0, 0, w, h);
-    particles.forEach(p => {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(150, 175, 255, ${p.alpha})`;
-      ctx.fill();
-
-      if (!reduceMotion){
-        p.y -= p.speed;
-        p.x += p.drift;
-        if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
-      }
+    await set(newRef, {
+      userId: currentUser.uid,
+      userName: currentUserName,
+      campaignId: proofCampaignId,
+      campaignTitle: campaignTitleValue,
+      startDate: startDateValue,
+      endDate: endDateValue,
+      notes: document.getElementById("proofNotes").value.trim(),
+      imageBase64,
+      status: "pendente",
+      submittedAt: Date.now()
     });
-    if (!reduceMotion) requestAnimationFrame(draw);
+
+    // Cópia mínima no próprio perfil do usuário — permite que ele veja seu
+    // histórico sem precisar de acesso de leitura ao node /validations
+    // inteiro (que é reservado ao admin nas Rules). O listener onValue de
+    // myValidations já pega essa escrita sozinho.
+    await set(ref(db, `users/${currentUser.uid}/myValidations/${newRef.key}`), {
+      campaignTitle: campaignTitleValue,
+      startDate: startDateValue,
+      endDate: endDateValue,
+      status: "pendente",
+      submittedAt: Date.now()
+    });
+
+    proofModal.classList.add("is-hidden");
+    showToast("Comprovante enviado! Aguarde a validação do administrador.", "success");
+  } catch (err) {
+    showToast("Não foi possível enviar o comprovante. Tente novamente.", "error");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove("is-loading");
+  }
+});
+
+function showProofFeedback(message) {
+  proofFeedback.textContent = message;
+  proofFeedback.hidden = false;
+}
+
+function hideProofFeedback() {
+  proofFeedback.hidden = true;
+  proofFeedback.textContent = "";
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---------- Notificações ---------- */
+
+const notifBell = document.getElementById("notifBell");
+const notifBadge = document.getElementById("notifBadge");
+const notifPanel = document.getElementById("notifPanel");
+const notifList = document.getElementById("notifList");
+
+const NOTIF_TYPE_LABELS = {
+  resgate: "Resgate de recompensa",
+  plano: "Plano a utilizar",
+  prazo: "Prazo de entrega",
+  aviso: "Instrução do admin"
+};
+
+notifBell.addEventListener("click", () => {
+  const willOpen = notifPanel.classList.contains("is-hidden");
+  notifPanel.classList.toggle("is-hidden");
+  if (willOpen) markAllAsRead();
+});
+
+document.addEventListener("click", (e) => {
+  if (!notifPanel.contains(e.target) && !notifBell.contains(e.target) && !notifPanel.classList.contains("is-hidden")) {
+    notifPanel.classList.add("is-hidden");
+  }
+});
+
+function renderNotifications(all) {
+  const mine = Object.entries(all)
+    .filter(([, n]) => !n.targetUid || n.targetUid === currentUser.uid)
+    .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+
+  if (mine.length === 0) {
+    notifList.innerHTML = `<p class="notif-empty">Nenhum aviso por enquanto.</p>`;
+    updateBadge(0);
+    window.__notifEntries = [];
+    return;
   }
 
-  resize();
-  initParticles();
-  draw();
+  const unreadCount = mine.filter(([, n]) => !(n.readBy && n.readBy[currentUser.uid])).length;
+  updateBadge(unreadCount);
 
-  window.addEventListener("resize", () => {
-    resize();
-    initParticles();
-    if (reduceMotion) draw();
-  });
-})();
+  notifList.innerHTML = mine.map(([id, n]) => {
+    const isUnread = !(n.readBy && n.readBy[currentUser.uid]);
+    const date = n.createdAt ? new Date(n.createdAt).toLocaleDateString("pt-BR") : "";
+    return `
+      <div class="notif-item ${isUnread ? "is-unread" : ""}">
+        <div class="notif-item-top">
+          <span class="notif-item-title">${escapeHtml(NOTIF_TYPE_LABELS[n.type] || "Aviso")}: ${escapeHtml(n.title || "")}</span>
+          <span class="notif-item-date">${date}</span>
+        </div>
+        <p class="notif-item-msg">${escapeHtml(n.message || "")}</p>
+      </div>`;
+  }).join("");
+
+  window.__notifEntries = mine;
+}
+
+function updateBadge(count) {
+  if (count > 0) {
+    notifBadge.textContent = count > 9 ? "9+" : count;
+    notifBadge.classList.remove("is-hidden");
+  } else {
+    notifBadge.classList.add("is-hidden");
+  }
+}
+
+async function markAllAsRead() {
+  const entries = window.__notifEntries || [];
+  const unread = entries.filter(([, n]) => !(n.readBy && n.readBy[currentUser.uid]));
+  if (unread.length === 0) return;
+
+  await Promise.all(unread.map(([id]) => set(ref(db, `notifications/${id}/readBy/${currentUser.uid}`), true)));
+}
+
+/* ---------- Utilitários ---------- */
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
+
+function formatDateRange(start, end) {
+  if (!start && !end) return "";
+  const opts = { day: "2-digit", month: "2-digit" };
+  const s = start ? new Date(start).toLocaleDateString("pt-BR", opts) : "?";
+  const e = end ? new Date(end).toLocaleDateString("pt-BR", opts) : "?";
+  return `${s} — ${e}`;
+}
+
+/* ---------- Toasts ---------- */
+
+const toastContainer = document.getElementById("toastContainer");
+
+function showToast(message, type = "success") {
+  const iconId = type === "success" ? "icon-check-circle" : "icon-alert";
+
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <svg class="icon"><use href="#${iconId}"></use></svg>
+    <span class="toast-message">${escapeHtml(message)}</span>
+  `;
+
+  toast.addEventListener("click", () => dismissToast(toast));
+  toastContainer.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add("is-visible"));
+
+  setTimeout(() => dismissToast(toast), 4000);
+}
+
+function dismissToast(toast) {
+  if (!toast.isConnected) return;
+  toast.classList.remove("is-visible");
+  setTimeout(() => toast.remove(), 300);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
