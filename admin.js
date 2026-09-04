@@ -331,13 +331,13 @@ async function handleUserAction(action, uid) {
       showToast(`${label} foi desbloqueado.`, "success");
     }
     if (action === "ban") {
-      if (!confirm(`Banir ${label}? A conta fica bloqueada e marcada como banida, mas o histórico é mantido.`)) return;
+      if (!(await showConfirm(`Banir ${label}? A conta fica bloqueada e marcada como banida, mas o histórico é mantido.`))) return;
       await update(ref(db, `users/${uid}`), { isBlocked: true, isBanned: true });
       logAction(`Baniu o usuário ${label}`);
       showToast(`${label} foi banido.`, "success");
     }
     if (action === "delete-user") {
-      if (!confirm(`Excluir ${label} de vez? Isso remove o cadastro, os comprovantes enviados por ele e as participações em campanhas. Não dá pra desfazer.`)) return;
+      if (!(await showConfirm(`Excluir ${label} de vez? Isso remove o cadastro, os comprovantes enviados por ele e as participações em campanhas. Não dá pra desfazer.`))) return;
       await deleteUserCompletely(uid, label);
       showToast(`${label} foi excluído.`, "success");
     }
@@ -590,7 +590,7 @@ function renderCampaignsTable() {
 
   body.querySelectorAll("button[data-action='delete']").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Excluir esta campanha?")) return;
+      if (!(await showConfirm("Excluir esta campanha?"))) return;
       const c = campaignsCache[btn.dataset.id];
       await remove(ref(db, `campaigns/${btn.dataset.id}`));
       logAction(`Excluiu a campanha "${c.title}"`);
@@ -744,7 +744,7 @@ function renderPostsTable() {
 
   body.querySelectorAll("button[data-action='delete-post']").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Excluir esta publicação?")) return;
+      if (!(await showConfirm("Excluir esta publicação?"))) return;
       await remove(ref(db, `posts/${btn.dataset.id}`));
       showToast("Publicação excluída.", "success");
     });
@@ -1058,7 +1058,7 @@ function renderNotifsTable() {
 
   body.querySelectorAll("button[data-action='delete-notif']").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Excluir este aviso?")) return;
+      if (!(await showConfirm("Excluir este aviso?"))) return;
       await remove(ref(db, `notifications/${btn.dataset.id}`));
       logAction(`Excluiu o aviso "${btn.dataset.title}"`);
       showToast("Aviso excluído.", "success");
@@ -1143,6 +1143,36 @@ function dismissToast(toast) {
   if (!toast.isConnected) return;
   toast.classList.remove("is-visible");
   setTimeout(() => toast.remove(), 300);
+}
+
+/* ---------- Modal de confirmação (substitui o confirm() nativo) ---------- */
+
+const confirmModal = document.getElementById("confirmModal");
+const confirmModalMessage = document.getElementById("confirmModalMessage");
+const confirmModalOk = document.getElementById("confirmModalOk");
+const confirmModalCancel = document.getElementById("confirmModalCancel");
+
+/**
+ * Substitui window.confirm() por um modal no mesmo estilo visual do resto
+ * do painel. Retorna uma Promise<boolean> — uso: if (!(await showConfirm("..."))) return;
+ */
+function showConfirm(message) {
+  confirmModalMessage.textContent = message;
+  confirmModal.classList.remove("is-hidden");
+
+  return new Promise((resolve) => {
+    const cleanup = (result) => {
+      confirmModal.classList.add("is-hidden");
+      confirmModalOk.removeEventListener("click", onOk);
+      confirmModalCancel.removeEventListener("click", onCancel);
+      resolve(result);
+    };
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+
+    confirmModalOk.addEventListener("click", onOk);
+    confirmModalCancel.addEventListener("click", onCancel);
+  });
 }
 
 function linesToArray(text) {
