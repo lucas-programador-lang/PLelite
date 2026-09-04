@@ -426,6 +426,18 @@
     </div>
   </div>
 
+  <!-- Modal: confirmação (substitui o confirm() nativo do navegador) -->
+  <div class="modal-overlay is-hidden" id="confirmModal">
+    <div class="modal-card" style="max-width:380px;">
+      <h3 id="confirmModalTitle">Confirmar ação</h3>
+      <p class="modal-subtitle" id="confirmModalMessage" style="margin:0 0 20px;"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-mini" id="confirmModalCancel" style="flex:1;">Cancelar</button>
+        <button type="button" class="btn-primary" id="confirmModalOk" style="flex:1;margin-top:0;">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script type="module" src="admin.js"></script>
