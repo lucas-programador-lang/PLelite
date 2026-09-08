@@ -926,10 +926,12 @@ button, input { font-family: inherit; }
 
 .metric-card {
   position: relative;
-  background: var(--glass-bg);
+  background:
+    linear-gradient(165deg, rgba(201, 162, 75, 0.06), transparent 55%),
+    var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  padding: 22px 20px;
+  padding: 22px 20px 20px;
   overflow: hidden;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
   transition: border-color 0.22s var(--ease), transform 0.22s var(--ease), box-shadow 0.22s var(--ease);
@@ -953,20 +955,33 @@ button, input { font-family: inherit; }
 }
 
 .metric-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.metric-label::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  flex-shrink: 0;
 }
 
 .metric-value {
+  display: block;
   font-family: var(--font-display);
   font-size: 29px;
   font-weight: 500;
   color: var(--gold-bright);
   letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
 /* Seções */
@@ -1024,10 +1039,36 @@ button, input { font-family: inherit; }
   transition: border-color 0.22s var(--ease), transform 0.22s var(--ease), box-shadow 0.22s var(--ease);
 }
 
+.campaign-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(150deg, rgba(201, 162, 75, 0.25), transparent 40%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.22s var(--ease);
+  pointer-events: none;
+}
+
 .campaign-card:hover {
   border-color: rgba(201, 162, 75, 0.3);
   transform: translateY(-3px);
   box-shadow: 0 20px 44px rgba(0, 0, 0, 0.32);
+}
+
+.campaign-card:hover::after { opacity: 1; }
+
+.campaign-card img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  display: block;
+  border: 1px solid rgba(201, 162, 75, 0.14);
 }
 
 .campaign-top {
@@ -1038,20 +1079,25 @@ button, input { font-family: inherit; }
 }
 
 .campaign-category {
+  display: inline-block;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   color: var(--gold-dim);
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: rgba(201, 162, 75, 0.08);
 }
 
 .campaign-title {
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 500;
-  margin: 5px 0 0;
+  margin: 8px 0 0;
   color: var(--text-primary);
   letter-spacing: -0.005em;
+  line-height: 1.3;
 }
 
 .campaign-desc {
@@ -1078,10 +1124,11 @@ button, input { font-family: inherit; }
 .status-cancelada { background: rgba(224, 101, 75, 0.14); color: var(--danger); border: 1px solid rgba(224, 101, 75, 0.3); }
 
 .campaign-progress {
-  height: 6px;
+  height: 7px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .campaign-progress-bar {
@@ -1089,16 +1136,20 @@ button, input { font-family: inherit; }
   background: linear-gradient(90deg, var(--gold), var(--gold-bright));
   border-radius: 999px;
   box-shadow: 0 0 10px rgba(236, 206, 138, 0.4);
+  transition: width 0.4s var(--ease);
 }
 
 .campaign-meta {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 11.5px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-muted);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 10px;
+  padding-top: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
 }
 
 .campaign-actions {
@@ -1122,6 +1173,11 @@ button, input { font-family: inherit; }
 }
 
 .btn-whatsapp:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(201, 162, 75, 0.3); }
+.btn-whatsapp:active { transform: translateY(0); }
+
+.campaign-card > .btn-mini.btn-block {
+  margin-top: -3px;
+}
 
 /* Variante usada como faixa independente (ex: botão de grupo do WhatsApp
    no topo do dashboard) — não fica dentro de um flex, então precisa
