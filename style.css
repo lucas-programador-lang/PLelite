@@ -136,6 +136,18 @@ button, input { font-family: inherit; }
   max-width: 420px;
 }
 
+.brand-logo-wrap {
+  margin: 0 0 22px;
+  line-height: 0;
+}
+
+.brand-logo {
+  display: block;
+  width: min(230px, 58vw);
+  height: auto;
+  filter: drop-shadow(0 14px 30px rgba(201, 162, 75, 0.22));
+}
+
 .brand-eyebrow {
   display: inline-block;
   font-family: var(--font-mono);
