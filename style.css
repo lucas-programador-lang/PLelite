@@ -620,6 +620,17 @@ button, input { font-family: inherit; }
   box-shadow: 0 8px 22px rgba(201, 162, 75, 0.35), 0 0 0 4px rgba(201, 162, 75, 0.08);
 }
 
+/* Quando a marca é a logo real (img), em vez do círculo "PL" de placeholder */
+img.sidebar-brand-mark {
+  width: 60px;
+  height: 60px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 8px 18px rgba(201, 162, 75, 0.3));
+  object-fit: contain;
+}
+
 .sidebar-brand-name {
   font-family: var(--font-display);
   font-size: 19px;
