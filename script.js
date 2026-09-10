@@ -16,7 +16,7 @@ const sidebarUserNameEl = document.getElementById("sidebarUserName");
 const sidebarAvatarEl = document.getElementById("sidebarAvatar");
 
 function updateSidebarUser(name) {
-  sidebarUserNameEl.textContent = name;dadadadadsdasd
+  sidebarUserNameEl.textContent = name;
   sidebarAvatarEl.textContent = (name || "?").trim().charAt(0).toUpperCase();
 }
 const logoutBtn = document.getElementById("logoutBtn");
