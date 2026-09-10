@@ -10,6 +10,8 @@ import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+const WORKER_URL = "https://apidaplielite.lucas-dev-programador.workers.dev";
+
 const sidebarUserNameEl = document.getElementById("sidebarUserName");
 const sidebarAvatarEl = document.getElementById("sidebarAvatar");
 
@@ -592,6 +594,123 @@ function fileToBase64(file) {
     reader.readAsDataURL(file);
   });
 }
+
+/* ---------- Depósito / Devolução (Pix via Worker + VizzionPay) ---------- */
+
+const depositoTipoDepositoBtn = document.getElementById("depositoTipoDeposito");
+const depositoTipoDevolucaoBtn = document.getElementById("depositoTipoDevolucao");
+const depositoWarningEl = document.getElementById("depositoWarning");
+const depositoForm = document.getElementById("depositoForm");
+const depositoSubmitBtn = document.getElementById("depositoSubmit");
+const depositoResultEl = document.getElementById("depositoResult");
+const depositoQrCodeEl = document.getElementById("depositoQrCode");
+const depositoPixCodeInput = document.getElementById("depositoPixCodeInput");
+const depositoCopyBtn = document.getElementById("depositoCopyBtn");
+const depositoStatusEl = document.getElementById("depositoStatus");
+
+let depositoTipoSelecionado = "deposito";
+let depositoUnsubscribe = null;
+
+function selecionarTipoDeposito(tipo) {
+  depositoTipoSelecionado = tipo;
+
+  const isDevolucao = tipo === "devolucao";
+  depositoTipoDepositoBtn.classList.toggle("is-active", !isDevolucao);
+  depositoTipoDevolucaoBtn.classList.toggle("is-active", isDevolucao);
+
+  depositoWarningEl.hidden = !isDevolucao;
+}
+
+depositoTipoDepositoBtn.addEventListener("click", () => selecionarTipoDeposito("deposito"));
+depositoTipoDevolucaoBtn.addEventListener("click", () => selecionarTipoDeposito("devolucao"));
+selecionarTipoDeposito("deposito");
+
+depositoForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const amount = parseFloat(document.getElementById("depositoAmount").value);
+  const phone = document.getElementById("depositoPhone").value.trim();
+  const documentNumber = document.getElementById("depositoDocument").value.trim();
+
+  if (!amount || amount <= 0) {
+    showToast("Informe um valor válido.", "error");
+    return;
+  }
+
+  depositoSubmitBtn.disabled = true;
+  depositoSubmitBtn.classList.add("is-loading");
+
+  // Se já havia um Pix anterior sendo escutado, para de escutar antes de
+  // gerar um novo, pra não sobrar listener duplicado.
+  if (depositoUnsubscribe) {
+    depositoUnsubscribe();
+    depositoUnsubscribe = null;
+  }
+
+  try {
+    const res = await fetch(`${WORKER_URL}/create-pix`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: currentUser.uid,
+        tipo: depositoTipoSelecionado,
+        amount,
+        name: currentUserName,
+        email: currentUser.email,
+        phone,
+        document: documentNumber
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Falha ao gerar o Pix");
+    }
+
+    depositoQrCodeEl.innerHTML = "";
+    new QRCode(depositoQrCodeEl, { text: data.pixCode, width: 220, height: 220 });
+
+    depositoPixCodeInput.value = data.pixCode;
+    depositoStatusEl.textContent = "Aguardando confirmação do pagamento…";
+    depositoStatusEl.classList.remove("is-confirmed");
+    depositoResultEl.hidden = false;
+
+    escutarConfirmacaoPix(data.identifier);
+  } catch (err) {
+    showToast("Não foi possível gerar o Pix. Tente novamente.", "error");
+  } finally {
+    depositoSubmitBtn.disabled = false;
+    depositoSubmitBtn.classList.remove("is-loading");
+  }
+});
+
+function escutarConfirmacaoPix(identifier) {
+  depositoUnsubscribe = onValue(ref(db, `pixTransactions/${identifier}`), (snap) => {
+    const data = snap.val();
+    if (data && data.status === "confirmed") {
+      depositoStatusEl.textContent = depositoTipoSelecionado === "devolucao"
+        ? "✅ Pagamento confirmado! Não esqueça de avisar no grupo do WhatsApp sobre a devolução."
+        : "✅ Pagamento confirmado! Obrigado pela contribuição.";
+      depositoStatusEl.classList.add("is-confirmed");
+      showToast("Pagamento confirmado!", "success");
+
+      if (depositoUnsubscribe) {
+        depositoUnsubscribe();
+        depositoUnsubscribe = null;
+      }
+    }
+  });
+}
+
+depositoCopyBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(depositoPixCodeInput.value);
+    showToast("Código Pix copiado!", "success");
+  } catch (err) {
+    showToast("Não foi possível copiar o código.", "error");
+  }
+});
 
 /* ---------- Notificações ---------- */
 
