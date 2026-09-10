@@ -1286,6 +1286,81 @@ img.sidebar-brand-mark {
 }
 
 /* ===================================================================
+   Depósito / Devolução (index.html)
+=================================================================== */
+
+.deposito-toggle {
+  display: flex;
+  gap: 10px;
+  margin: -6px 0 18px;
+}
+
+.deposito-toggle-btn {
+  flex: 1;
+  padding: 13px 0;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(201, 162, 75, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), color 0.18s var(--ease), background-color 0.18s var(--ease);
+}
+
+.deposito-toggle-btn:hover {
+  border-color: rgba(201, 162, 75, 0.4);
+  color: var(--text-primary);
+}
+
+.deposito-toggle-btn.is-active {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  background: rgba(201, 162, 75, 0.08);
+}
+
+.deposito-warning {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--gold-bright);
+  background: rgba(201, 162, 75, 0.1);
+  border: 1px solid rgba(201, 162, 75, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin: 0 0 18px;
+}
+
+.deposito-result {
+  margin-top: 24px;
+  max-width: 320px;
+}
+
+.deposito-qr-wrap {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.deposito-status {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 16px 0 0;
+  text-align: center;
+  transition: color 0.18s var(--ease);
+}
+
+.deposito-status.is-confirmed {
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* ===================================================================
    Painel administrativo (admin.html)
 =================================================================== */
 
