@@ -598,7 +598,9 @@ button, input { font-family: inherit; }
 }
 .sidebar::-webkit-scrollbar-thumb:hover { background: rgba(201, 162, 75, 0.4); }
 
-.sidebar-close { display: none; }
+/* Botão "X" de fechar o sidebar no mobile — removido da interface
+   (permanece oculto em qualquer largura de tela). */
+.sidebar-close { display: none !important; }
 
 /* ---- Marca ---- */
 
@@ -925,30 +927,11 @@ img.sidebar-brand-mark {
 
   .sidebar.is-open { transform: translateX(0); }
 
-  .sidebar-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    align-self: flex-end;
-    width: 34px;
-    height: 34px;
-    margin: 0 0 10px auto;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(201, 162, 75, 0.3);
-    border-radius: 9px;
-    color: var(--gold);
-    cursor: pointer;
-    transition: border-color 0.18s var(--ease), color 0.18s var(--ease);
-  }
-
-  .sidebar-close:hover { border-color: var(--gold); color: var(--gold-bright); }
-
   .sidebar-link { padding: 13px 14px; }
 }
 
 @media (min-width: 901px) {
   .sidebar-toggle,
-  .sidebar-close,
   .sidebar-overlay { display: none !important; }
 }
 
