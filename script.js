@@ -629,6 +629,7 @@ depositoForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const amount = parseFloat(document.getElementById("depositoAmount").value);
+  const phone = document.getElementById("depositoPhone").value.trim();
   const documentNumber = document.getElementById("depositoDocument").value.trim();
 
   if (!amount || amount <= 0) {
@@ -656,6 +657,7 @@ depositoForm.addEventListener("submit", async (e) => {
         amount,
         name: currentUserName,
         email: currentUser.email,
+        phone,
         document: documentNumber
       })
     });
