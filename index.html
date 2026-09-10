@@ -20,6 +20,7 @@
     <symbol id="icon-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="4" rx="0.5"/><path d="M5 13h14v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7Z"/><path d="M12 9v12"/><path d="M12 9C9 9 8 7.5 8 6.2 8 5 9 4 10.2 4 11.8 4 12 6.5 12 9Z"/><path d="M12 9c3 0 4-1.5 4-2.8C16 5 15 4 13.8 4 12.2 4 12 6.5 12 9Z"/></symbol>
     <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></symbol>
     <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 19c1-3.4 3.4-5.2 6.2-5.2s5.2 1.8 6.2 5.2"/><circle cx="17" cy="8.5" r="2.6"/><path d="M15.3 13.8c2.4.2 4.2 1.9 5 5"/></symbol>
+    <symbol id="icon-exchange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13"/><path d="M13 4l4 4-4 4"/><path d="M20 16H7"/><path d="M11 20l-4-4 4-4"/></symbol>
     <symbol id="icon-whatsapp" viewBox="0 0 24 24" stroke="none">
       <circle cx="12" cy="12" r="12" fill="#25D366"/>
       <g transform="translate(3.36,3.36) scale(0.72)">
@@ -82,6 +83,7 @@
         <button type="button" class="sidebar-link" data-view="patrocinios"><svg class="icon"><use href="#icon-coins"></use></svg><span>Patrocínios</span></button>
         <button type="button" class="sidebar-link" data-view="andamentos"><svg class="icon"><use href="#icon-chart"></use></svg><span>Andamentos</span></button>
         <button type="button" class="sidebar-link" data-view="sorteios"><svg class="icon"><use href="#icon-gift"></use></svg><span>Sorteios</span></button>
+        <button type="button" class="sidebar-link" data-view="deposito"><svg class="icon"><use href="#icon-exchange"></use></svg><span>Depósito/Devolução</span></button>
         <button type="button" class="sidebar-link" data-view="minha-conta"><svg class="icon"><use href="#icon-user"></use></svg><span>Minha Conta</span></button>
       </div>
 
@@ -198,6 +200,55 @@
         </section>
       </div>
 
+      <div class="app-view" id="view-deposito">
+        <section class="campaign-section" id="depositoSection">
+          <div class="section-heading">
+            <h2><svg class="icon"><use href="#icon-exchange"></use></svg> Depósito / Devolução</h2>
+          </div>
+
+          <div class="panel-block">
+            <h3>Fazer um Pix</h3>
+
+            <div style="display:flex;gap:10px;margin:-6px 0 18px;">
+              <button type="button" class="btn-mini" id="depositoTipoDeposito" style="flex:1;padding:12px 0;">Depósito (doação)</button>
+              <button type="button" class="btn-mini" id="depositoTipoDevolucao" style="flex:1;padding:12px 0;">Devolução de patrocínio</button>
+            </div>
+
+            <p id="depositoWarning" hidden style="font-size:12.5px;line-height:1.6;color:var(--gold-bright);background:rgba(201,162,75,0.1);border:1px solid rgba(201,162,75,0.3);border-radius:var(--radius-md);padding:12px 14px;margin:0 0 18px;">
+              ⚠️ Depois que o pagamento da devolução for confirmado, avise no grupo do WhatsApp que a devolução foi feita.
+            </p>
+
+            <form class="modal-form" id="depositoForm" style="max-width:420px;">
+              <div class="field">
+                <label for="depositoAmount">Valor (R$)</label>
+                <input type="number" id="depositoAmount" min="1" step="0.01" placeholder="0,00" required>
+              </div>
+              <div class="field">
+                <label for="depositoPhone">Telefone (com DDD)</label>
+                <input type="tel" id="depositoPhone" placeholder="(00) 00000-0000" required>
+              </div>
+              <div class="field">
+                <label for="depositoDocument">CPF</label>
+                <input type="text" id="depositoDocument" placeholder="000.000.000-00" required>
+              </div>
+              <button type="submit" class="btn-primary" id="depositoSubmit" style="max-width:220px;"><span class="btn-label">Gerar Pix</span></button>
+            </form>
+
+            <div id="depositoResult" hidden style="margin-top:24px;max-width:320px;">
+              <div style="background:#fff;border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;justify-content:center;" id="depositoQrCode"></div>
+
+              <div class="field" style="margin-top:16px;">
+                <label for="depositoPixCodeInput">Código Pix copia e cola</label>
+                <input type="text" id="depositoPixCodeInput" readonly>
+              </div>
+              <button type="button" class="btn-mini btn-block" id="depositoCopyBtn">Copiar código</button>
+
+              <p id="depositoStatus" style="font-size:12.5px;color:var(--text-muted);margin:16px 0 0;text-align:center;">Aguardando confirmação do pagamento…</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
       <div class="app-view" id="view-minha-conta">
         <section class="campaign-section" id="minhaContaSection">
           <div class="section-heading">
@@ -263,6 +314,7 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script type="module" src="firebase-config.js"></script>
 <script type="module" src="script.js"></script>
 </body>
