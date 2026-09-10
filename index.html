@@ -209,12 +209,12 @@
           <div class="panel-block">
             <h3>Fazer um Pix</h3>
 
-            <div style="display:flex;gap:10px;margin:-6px 0 18px;">
-              <button type="button" class="btn-mini" id="depositoTipoDeposito" style="flex:1;padding:12px 0;">Depósito (doação)</button>
-              <button type="button" class="btn-mini" id="depositoTipoDevolucao" style="flex:1;padding:12px 0;">Devolução de patrocínio</button>
+            <div class="deposito-toggle">
+              <button type="button" class="deposito-toggle-btn" id="depositoTipoDeposito">Depósito (doação)</button>
+              <button type="button" class="deposito-toggle-btn" id="depositoTipoDevolucao">Devolução de patrocínio</button>
             </div>
 
-            <p id="depositoWarning" hidden style="font-size:12.5px;line-height:1.6;color:var(--gold-bright);background:rgba(201,162,75,0.1);border:1px solid rgba(201,162,75,0.3);border-radius:var(--radius-md);padding:12px 14px;margin:0 0 18px;">
+            <p id="depositoWarning" class="deposito-warning" hidden>
               ⚠️ Depois que o pagamento da devolução for confirmado, avise no grupo do WhatsApp que a devolução foi feita.
             </p>
 
@@ -224,18 +224,14 @@
                 <input type="number" id="depositoAmount" min="1" step="0.01" placeholder="0,00" required>
               </div>
               <div class="field">
-                <label for="depositoPhone">Telefone (com DDD)</label>
-                <input type="tel" id="depositoPhone" placeholder="(00) 00000-0000" required>
-              </div>
-              <div class="field">
                 <label for="depositoDocument">CPF</label>
                 <input type="text" id="depositoDocument" placeholder="000.000.000-00" required>
               </div>
               <button type="submit" class="btn-primary" id="depositoSubmit" style="max-width:220px;"><span class="btn-label">Gerar Pix</span></button>
             </form>
 
-            <div id="depositoResult" hidden style="margin-top:24px;max-width:320px;">
-              <div style="background:#fff;border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;justify-content:center;" id="depositoQrCode"></div>
+            <div id="depositoResult" class="deposito-result" hidden>
+              <div class="deposito-qr-wrap" id="depositoQrCode"></div>
 
               <div class="field" style="margin-top:16px;">
                 <label for="depositoPixCodeInput">Código Pix copia e cola</label>
@@ -243,7 +239,7 @@
               </div>
               <button type="button" class="btn-mini btn-block" id="depositoCopyBtn">Copiar código</button>
 
-              <p id="depositoStatus" style="font-size:12.5px;color:var(--text-muted);margin:16px 0 0;text-align:center;">Aguardando confirmação do pagamento…</p>
+              <p id="depositoStatus" class="deposito-status">Aguardando confirmação do pagamento…</p>
             </div>
           </div>
         </section>
