@@ -6,7 +6,7 @@
 // o dado muda no banco, sem precisar recarregar a página.
 // ===================================================================
 
-import { auth, db } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";k
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
