@@ -2,7 +2,7 @@
 // PL ELITE — script.js
 // Usado apenas por index.html (dashboard).
 // Protege a rota (isAuthorized) e mantém tudo em tempo real via
-// onValue() do Realtime Database — a tela atualiza sozinha assim queadadad
+// onValue() do Realtime Database — a tela atualiza sozinha assim que
 // o dado muda no banco, sem precisar recarregar a página.
 // ===================================================================
 
