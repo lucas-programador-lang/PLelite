@@ -544,12 +544,12 @@ button, input { font-family: inherit; }
   flex-shrink: 0;
 }
 
-/* icon-whatsapp usa cores fixas nos próprios paths (círculo verde +
-   fone branco), então não pode herdar fill:none nem stroke:currentColor
-   da regra genérica .icon acima */
-.icon:has(use[href="#icon-whatsapp"]) {
-  stroke: none;
+/* Ícones de marca (ex.: WhatsApp) usam cores fixas nos próprios paths
+   do <symbol> — precisam ignorar o fill:none / stroke:currentColor
+   genérico de .icon, senão o desenho colorido vira só um contorno. */
+.icon.icon--brand {
   fill: initial;
+  stroke: none;
 }
 
 .app-main {
