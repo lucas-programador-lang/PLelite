@@ -152,7 +152,7 @@
             <div class="field"><label for="cPlan">Plano exigido</label><input type="text" id="cPlan" placeholder="ex: Bronze, Prata, Ouro"></div>
             <div class="field"><label for="cMachines">Máquinas/planos envolvidos</label><input type="text" id="cMachines" placeholder="ex: Máquina A, Plano Turbo"></div>
             <div class="field field-full"><label for="cDesc">Descrição</label><textarea id="cDesc"></textarea></div>
-            <div class="field field-full"><label for="cImages">Fotos (uma URL por linha)</label><textarea id="cImages" placeholder="https://…&#10;https://…"></textarea></div>
+            <div class="field field-full"><label for="cImages">Fotos</label><input type="file" id="cImages" accept="image/*" multiple></div>
             <div class="field"><label for="cBudget">Orçamento (R$)</label><input type="number" id="cBudget" min="0" step="0.01"></div>
             <div class="field"><label for="cMaxSlots">Limite de vagas</label><input type="number" id="cMaxSlots" min="1" value="3"></div>
             <div class="field"><label for="cStart">Data de início</label><input type="date" id="cStart"></div>
@@ -201,7 +201,7 @@
               </datalist>
             </div>
             <div class="field field-full"><label for="pDesc">Descrição</label><textarea id="pDesc"></textarea></div>
-            <div class="field field-full"><label for="pImages">Fotos (uma URL por linha)</label><textarea id="pImages" placeholder="https://…&#10;https://…"></textarea></div>
+            <div class="field field-full"><label for="pImages">Fotos</label><input type="file" id="pImages" accept="image/*" multiple></div>
             <div class="field"><label for="pLink">Link de redirecionamento</label><input type="text" id="pLink" placeholder="https://…"></div>
             <div class="field">
               <label for="pStatus">Status</label>
@@ -371,7 +371,7 @@
         <div class="field"><label for="ecPlan">Plano exigido</label><input type="text" id="ecPlan"></div>
         <div class="field"><label for="ecMachines">Máquinas/planos envolvidos</label><input type="text" id="ecMachines"></div>
         <div class="field"><label for="ecDesc">Descrição</label><textarea id="ecDesc"></textarea></div>
-        <div class="field"><label for="ecImages">Fotos (uma URL por linha)</label><textarea id="ecImages" placeholder="https://…&#10;https://…"></textarea></div>
+        <div class="field"><label for="ecImages">Fotos <span id="ecImagesCount" style="font-weight:400;color:var(--text-muted);"></span></label><input type="file" id="ecImages" accept="image/*" multiple><p style="font-size:11px;color:var(--text-muted);margin:4px 0 0;">Selecione novos arquivos só se quiser substituir as fotos atuais.</p></div>
         <div class="field"><label for="ecBudget">Orçamento (R$)</label><input type="number" id="ecBudget" min="0" step="0.01"></div>
         <div class="field"><label for="ecMaxSlots">Limite de vagas</label><input type="number" id="ecMaxSlots" min="1"></div>
         <div class="field"><label for="ecStart">Data de início</label><input type="date" id="ecStart"></div>
@@ -401,7 +401,7 @@
           <input type="text" id="epCategory" list="postCategoryOptions" placeholder="ex: Oportunidades">
         </div>
         <div class="field"><label for="epDesc">Descrição</label><textarea id="epDesc"></textarea></div>
-        <div class="field"><label for="epImages">Fotos (uma URL por linha)</label><textarea id="epImages"></textarea></div>
+        <div class="field"><label for="epImages">Fotos <span id="epImagesCount" style="font-weight:400;color:var(--text-muted);"></span></label><input type="file" id="epImages" accept="image/*" multiple><p style="font-size:11px;color:var(--text-muted);margin:4px 0 0;">Selecione novos arquivos só se quiser substituir as fotos atuais.</p></div>
         <div class="field"><label for="epLink">Link de redirecionamento</label><input type="text" id="epLink"></div>
         <div class="field">
           <label for="epStatus">Status</label>
