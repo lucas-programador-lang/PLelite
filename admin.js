@@ -441,6 +441,7 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
     requiredPlan: document.getElementById("cPlan").value.trim(),
     machines: document.getElementById("cMachines").value.trim(),
     description: document.getElementById("cDesc").value.trim(),
+    images: linesToArray(document.getElementById("cImages").value),
     budget: Number(document.getElementById("cBudget").value) || 0,
     maxSlots: Number(document.getElementById("cMaxSlots").value) || 3,
     filledSlots: 0,
@@ -640,6 +641,7 @@ function openEditCampaignModal(id) {
   document.getElementById("ecPlan").value = c.requiredPlan || "";
   document.getElementById("ecMachines").value = c.machines || "";
   document.getElementById("ecDesc").value = c.description || "";
+  document.getElementById("ecImages").value = (c.images || []).join("\n");
   document.getElementById("ecBudget").value = c.budget || 0;
   document.getElementById("ecMaxSlots").value = c.maxSlots || 3;
   document.getElementById("ecStart").value = c.startDate || "";
@@ -675,6 +677,7 @@ function bindEditCampaignModal() {
         requiredPlan: document.getElementById("ecPlan").value.trim(),
         machines: document.getElementById("ecMachines").value.trim(),
         description: document.getElementById("ecDesc").value.trim(),
+        images: linesToArray(document.getElementById("ecImages").value),
         budget: Number(document.getElementById("ecBudget").value) || 0,
         maxSlots: Number(document.getElementById("ecMaxSlots").value) || 3,
         startDate: document.getElementById("ecStart").value,
