@@ -1369,7 +1369,9 @@ img.sidebar-brand-mark {
 
 .panel-block {
   position: relative;
-  background: var(--glass-bg-strong);
+  background:
+    radial-gradient(ellipse 480px 220px at 100% 0%, rgba(201, 162, 75, 0.05), transparent 70%),
+    var(--glass-bg-strong);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 26px 24px 24px;
@@ -1466,6 +1468,38 @@ img.sidebar-brand-mark {
 .data-table td > .row-actions {
   margin-top: 2px;
 }
+
+/* Wrapper de rolagem horizontal das tabelas (usado via style inline
+   overflow-x:auto nos painéis) — mesma scrollbar fina e dourada do menu
+   lateral, em vez da barra padrão do navegador, e um leve degradê nas
+   bordas pra indicar que dá pra arrastar o conteúdo pros lados. */
+[style*="overflow-x:auto"] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 162, 75, 0.3) transparent;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+[style*="overflow-x:auto"]::-webkit-scrollbar { height: 6px; }
+[style*="overflow-x:auto"]::-webkit-scrollbar-track { background: transparent; }
+[style*="overflow-x:auto"]::-webkit-scrollbar-thumb {
+  background: rgba(201, 162, 75, 0.25);
+  border-radius: 999px;
+}
+[style*="overflow-x:auto"]::-webkit-scrollbar-thumb:hover { background: rgba(201, 162, 75, 0.4); }
+
+/* Mesma scrollbar fina dentro dos modais com conteúdo comprido
+   (ex.: editar campanha) e no card do print, no lugar da barra padrão. */
+.modal-card {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 162, 75, 0.3) transparent;
+}
+.modal-card::-webkit-scrollbar { width: 6px; }
+.modal-card::-webkit-scrollbar-track { background: transparent; }
+.modal-card::-webkit-scrollbar-thumb {
+  background: rgba(201, 162, 75, 0.25);
+  border-radius: 999px;
+}
+.modal-card::-webkit-scrollbar-thumb:hover { background: rgba(201, 162, 75, 0.4); }
 
 .row-actions {
   display: flex;
@@ -1589,13 +1623,27 @@ select.btn-mini[multiple] option:checked {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 4, 6, 0.7);
-  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   z-index: 100;
+}
+
+/* O desfoque de fundo fica num pseudo-elemento separado, atrás do card.
+   Aplicar backdrop-filter direto no .modal-overlay (que também é pai do
+   conteúdo) faz alguns navegadores (Safari/iOS em especial) "vazarem" o
+   blur para dentro dos filhos — é isso que deixava o print do comprovante
+   embaçado dentro do modal. Isolando o blur num ::before, o conteúdo
+   (inclusive imagens) renderiza nítido. */
+.modal-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 4, 6, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: -1;
 }
 
 .modal-card {
@@ -1608,6 +1656,11 @@ select.btn-mini[multiple] option:checked {
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  /* Isola o card num layer de composição próprio, sem herdar nenhum
+     desfoque do overlay — garante que imagens dentro dele (ex.: print do
+     comprovante) sejam rasterizadas com nitidez total. */
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 @media (max-width: 480px) {
@@ -1651,6 +1704,23 @@ select.btn-mini[multiple] option:checked {
 }
 
 .modal-actions .btn-primary { flex: 1; margin-top: 0; }
+
+/* Imagem do print no modal de validações — mantém a resolução original,
+   sem esticar nem cortar, e some com a barra de rolagem do card. */
+.proof-modal-img {
+  display: block;
+  width: 100%;
+  max-height: min(70vh, 640px);
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  margin: 14px 0;
+  background: #000;
+  image-rendering: auto;
+}
+
+@media (min-width: 640px) {
+  .proof-modal-img { max-height: 75vh; }
+}
 
 .btn-mini.btn-block {
   width: 100%;
