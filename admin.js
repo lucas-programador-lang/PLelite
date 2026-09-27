@@ -289,7 +289,7 @@ function renderUsersTable() {
               : `<button class="btn-mini success" data-action="unblock" data-uid="${uid}">Desbloquear</button>`}
             ${!u.isBanned
               ? `<button class="btn-mini danger" data-action="ban" data-uid="${uid}">Banir</button>`
-              : ""}
+              : `<button class="btn-mini success" data-action="unban" data-uid="${uid}">Desbanir</button>`}
             <button class="btn-mini danger" data-action="delete-user" data-uid="${uid}">Excluir</button>
           </div>
         </td>
@@ -335,6 +335,11 @@ async function handleUserAction(action, uid) {
       await update(ref(db, `users/${uid}`), { isBlocked: true, isBanned: true });
       logAction(`Baniu o usuário ${label}`);
       showToast(`${label} foi banido.`, "success");
+    }
+    if (action === "unban") {
+      await update(ref(db, `users/${uid}`), { isBlocked: false, isBanned: false });
+      logAction(`Desbaniu o usuário ${label}`);
+      showToast(`${label} foi desbanido.`, "success");
     }
     if (action === "delete-user") {
       if (!(await showConfirm(`Excluir ${label} de vez? Isso remove o cadastro, os comprovantes enviados por ele e as participações em campanhas. Não dá pra desfazer.`))) return;
@@ -862,6 +867,25 @@ function renderValidationsTable() {
   body.querySelectorAll("button[data-action='approve']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const { id, uid, campaign, name } = btn.dataset;
+
+      // Avisa (sem bloquear) se aprovar vai estourar o número de vagas da
+      // campanha — antes disso o admin não tinha nenhum sinal de lotação.
+      if (uid && campaign) {
+        const c = campaignsCache[campaign];
+        if (c) {
+          const participants = c.participants || {};
+          const alreadyIn = !!participants[uid];
+          const filledCount = Object.keys(participants).length;
+          const maxSlots = c.maxSlots || 3;
+          if (!alreadyIn && filledCount >= maxSlots) {
+            const proceed = await showConfirm(
+              `A campanha "${c.title}" já está com todas as ${maxSlots} vagas preenchidas. Aprovar mesmo assim e adicionar mais uma vaga?`
+            );
+            if (!proceed) return;
+          }
+        }
+      }
+
       const updates = { [`validations/${id}/status`]: "aprovado" };
       if (uid) updates[`users/${uid}/myValidations/${id}/status`] = "aprovado";
       // Aprovar o comprovante ocupa a vaga na campanha de verdade.
