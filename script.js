@@ -271,6 +271,8 @@ function buildCampaignCard(c) {
     ? `https://wa.me/${c.whatsappNumber}?text=${encodeURIComponent(c.whatsappMessage || "Tenho interesse nesta campanha")}`
     : c.redirectLink || "#";
 
+  const images = c.images || [];
+
   card.innerHTML = `
     <div class="campaign-top">
       <div>
@@ -279,6 +281,8 @@ function buildCampaignCard(c) {
       </div>
       <span class="status-tag ${statusClass}">${escapeHtml(statusLabel)}</span>
     </div>
+
+    ${images[0] ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(c.title || "")}" loading="lazy">` : ""}
 
     ${c.result ? `<span class="status-tag ${c.result === "sucesso" ? "status-ativa" : "status-cancelada"}">${c.result === "sucesso" ? "🟢 Sucesso" : "🔴 Prejuízo"}</span>` : ""}
 
