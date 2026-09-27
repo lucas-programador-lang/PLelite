@@ -108,6 +108,7 @@ document.querySelectorAll("[data-toggle-password]").forEach((btn) => {
     const isHidden = input.type === "password";
     input.type = isHidden ? "text" : "password";
     btn.textContent = isHidden ? "Ocultar" : "Mostrar";
+    btn.setAttribute("aria-label", isHidden ? "Ocultar senha" : "Mostrar senha");
   });
 });
 
