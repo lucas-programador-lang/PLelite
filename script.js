@@ -648,11 +648,15 @@ depositoForm.addEventListener("submit", async (e) => {
   }
 
   try {
+    const idToken = await currentUser.getIdToken();
+
     const res = await fetch(`${WORKER_URL}/create-pix`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${idToken}`
+      },
       body: JSON.stringify({
-        userId: currentUser.uid,
         tipo: depositoTipoSelecionado,
         amount,
         name: currentUserName,
