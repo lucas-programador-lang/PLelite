@@ -686,21 +686,33 @@ depositoForm.addEventListener("submit", async (e) => {
 });
 
 function escutarConfirmacaoPix(identifier) {
-  depositoUnsubscribe = onValue(ref(db, `pixTransactions/${identifier}`), (snap) => {
-    const data = snap.val();
-    if (data && data.status === "confirmed") {
-      depositoStatusEl.textContent = depositoTipoSelecionado === "devolucao"
-        ? "✅ Pagamento confirmado! Não esqueça de avisar no grupo do WhatsApp sobre a devolução."
-        : "✅ Pagamento confirmado! Obrigado pela contribuição.";
-      depositoStatusEl.classList.add("is-confirmed");
-      showToast("Pagamento confirmado!", "success");
+  depositoUnsubscribe = onValue(
+    ref(db, `pixTransactions/${identifier}`),
+    (snap) => {
+      const data = snap.val();
+      if (data && data.status === "confirmed") {
+        depositoStatusEl.textContent = depositoTipoSelecionado === "devolucao"
+          ? "✅ Pagamento confirmado! Não esqueça de avisar no grupo do WhatsApp sobre a devolução."
+          : "✅ Pagamento confirmado! Obrigado pela contribuição.";
+        depositoStatusEl.classList.add("is-confirmed");
+        showToast("Pagamento confirmado!", "success");
 
-      if (depositoUnsubscribe) {
-        depositoUnsubscribe();
-        depositoUnsubscribe = null;
+        if (depositoUnsubscribe) {
+          depositoUnsubscribe();
+          depositoUnsubscribe = null;
+        }
       }
+    },
+    (err) => {
+      // Se as Rules do Realtime Database negarem a leitura (ex.: o Worker
+      // grava o Pix com um campo de dono diferente de "userId"), o app não
+      // pode mais ficar preso "Aguardando confirmação" pra sempre sem avisar
+      // ninguém — melhor mostrar que a confirmação automática falhou.
+      console.error("Erro ao escutar confirmação do Pix:", err);
+      depositoStatusEl.textContent = "Não foi possível confirmar automaticamente. Se já pagou, avise no grupo do WhatsApp.";
+      depositoUnsubscribe = null;
     }
-  });
+  );
 }
 
 depositoCopyBtn.addEventListener("click", async () => {
