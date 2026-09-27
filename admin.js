@@ -436,12 +436,13 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
 
   const newRef = push(ref(db, "campaigns"));
   const titleValue = document.getElementById("cTitle").value.trim();
+  const images = await filesToBase64Array(document.getElementById("cImages").files);
   await set(newRef, {
     title: titleValue,
     requiredPlan: document.getElementById("cPlan").value.trim(),
     machines: document.getElementById("cMachines").value.trim(),
     description: document.getElementById("cDesc").value.trim(),
-    images: linesToArray(document.getElementById("cImages").value),
+    images,
     budget: Number(document.getElementById("cBudget").value) || 0,
     maxSlots: Number(document.getElementById("cMaxSlots").value) || 3,
     filledSlots: 0,
@@ -641,7 +642,9 @@ function openEditCampaignModal(id) {
   document.getElementById("ecPlan").value = c.requiredPlan || "";
   document.getElementById("ecMachines").value = c.machines || "";
   document.getElementById("ecDesc").value = c.description || "";
-  document.getElementById("ecImages").value = (c.images || []).join("\n");
+  document.getElementById("ecImages").value = "";
+  const ecCount = c.images && c.images.length ? c.images.length : 0;
+  document.getElementById("ecImagesCount").textContent = ecCount ? `(${ecCount} foto${ecCount === 1 ? "" : "s"} atual${ecCount === 1 ? "" : "is"})` : "(nenhuma foto ainda)";
   document.getElementById("ecBudget").value = c.budget || 0;
   document.getElementById("ecMaxSlots").value = c.maxSlots || 3;
   document.getElementById("ecStart").value = c.startDate || "";
@@ -672,12 +675,12 @@ function bindEditCampaignModal() {
 
     try {
       const titleValue = document.getElementById("ecTitle").value.trim();
-      await update(ref(db, `campaigns/${editingCampaignId}`), {
+      const ecFiles = document.getElementById("ecImages").files;
+      const payload = {
         title: titleValue,
         requiredPlan: document.getElementById("ecPlan").value.trim(),
         machines: document.getElementById("ecMachines").value.trim(),
         description: document.getElementById("ecDesc").value.trim(),
-        images: linesToArray(document.getElementById("ecImages").value),
         budget: Number(document.getElementById("ecBudget").value) || 0,
         maxSlots: Number(document.getElementById("ecMaxSlots").value) || 3,
         startDate: document.getElementById("ecStart").value,
@@ -685,7 +688,13 @@ function bindEditCampaignModal() {
         whatsappNumber: document.getElementById("ecWhats").value.trim(),
         whatsappMessage: document.getElementById("ecWhatsMsg").value.trim(),
         visibleTo: readVisibleTo(document.getElementById("ecVisibleTo"))
-      });
+      };
+      // Só troca as fotos se o admin selecionou arquivos novos — senão
+      // mantém as que já estavam salvas na campanha.
+      if (ecFiles && ecFiles.length > 0) {
+        payload.images = await filesToBase64Array(ecFiles);
+      }
+      await update(ref(db, `campaigns/${editingCampaignId}`), payload);
       logAction(`Editou a campanha "${titleValue}"`);
       editCampaignModal.classList.add("is-hidden");
       showToast("Campanha atualizada!", "success");
@@ -705,11 +714,12 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
   submitBtn.disabled = true;
 
   const newRef = push(ref(db, "posts"));
+  const images = await filesToBase64Array(document.getElementById("pImages").files);
   await set(newRef, {
     title: document.getElementById("pTitle").value.trim(),
     category: document.getElementById("pCategory").value.trim(),
     description: document.getElementById("pDesc").value.trim(),
-    images: linesToArray(document.getElementById("pImages").value),
+    images,
     redirectLink: document.getElementById("pLink").value.trim(),
     date: Date.now(),
     status: document.getElementById("pStatus").value
@@ -772,7 +782,10 @@ function openEditPostModal(id) {
   document.getElementById("epTitle").value = p.title || "";
   document.getElementById("epCategory").value = p.category || "";
   document.getElementById("epDesc").value = p.description || "";
-  document.getElementById("epImages").value = (p.images || (p.imageUrl ? [p.imageUrl] : [])).join("\n");
+  document.getElementById("epImages").value = "";
+  const images = p.images || (p.imageUrl ? [p.imageUrl] : []);
+  const epCount = images.length;
+  document.getElementById("epImagesCount").textContent = epCount ? `(${epCount} foto${epCount === 1 ? "" : "s"} atual${epCount === 1 ? "" : "is"})` : "(nenhuma foto ainda)";
   document.getElementById("epLink").value = p.redirectLink || "";
   document.getElementById("epStatus").value = p.status || "publicado";
   hideFeedback(editPostFeedback);
@@ -792,14 +805,20 @@ function bindEditPostModal() {
     submitBtn.disabled = true;
 
     try {
-      await update(ref(db, `posts/${editingPostId}`), {
+      const epFiles = document.getElementById("epImages").files;
+      const payload = {
         title: document.getElementById("epTitle").value.trim(),
         category: document.getElementById("epCategory").value.trim(),
         description: document.getElementById("epDesc").value.trim(),
-        images: linesToArray(document.getElementById("epImages").value),
         redirectLink: document.getElementById("epLink").value.trim(),
         status: document.getElementById("epStatus").value
-      });
+      };
+      // Só troca as fotos se o admin selecionou arquivos novos — senão
+      // mantém as que já estavam salvas na publicação.
+      if (epFiles && epFiles.length > 0) {
+        payload.images = await filesToBase64Array(epFiles);
+      }
+      await update(ref(db, `posts/${editingPostId}`), payload);
       editPostModal.classList.add("is-hidden");
       showToast("Publicação atualizada!", "success");
     } catch (err) {
@@ -1202,11 +1221,17 @@ function showConfirm(message) {
   });
 }
 
-function linesToArray(text) {
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+// Converte um FileList (input type="file" multiple) em um array de
+// data URLs base64 — mesma técnica usada no envio de comprovante pelo
+// usuário, só que aceitando vários arquivos de uma vez.
+function filesToBase64Array(fileList) {
+  const files = Array.from(fileList || []);
+  return Promise.all(files.map((file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  })));
 }
 
 function escapeHtml(str) {
