@@ -1166,8 +1166,6 @@ img.sidebar-brand-mark {
   transition: transform 0.4s var(--ease);
 }
 
-.campaign-card:hover img { transform: scale(1.035); }
-
 .campaign-top {
   display: flex;
   align-items: flex-start;
@@ -1487,6 +1485,17 @@ img.sidebar-brand-mark {
 .toolbar input:focus {
   border-color: var(--gold);
   box-shadow: 0 0 0 3px rgba(201, 162, 75, 0.12);
+}
+
+.toolbar select {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(201, 162, 75, 0.18);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  color: var(--text-primary);
+  font-size: 13.5px;
+  outline: none;
+  cursor: pointer;
 }
 
 .data-table {
@@ -2016,4 +2025,220 @@ select.btn-mini[multiple] option:checked {
 
   .toast { transform: translateY(120%); }
   .toast.is-visible { transform: translateY(0); }
+}
+
+/* ===================================================================
+   Galeria de fotos nos cards (campanhas e publicações)
+   Suporta várias fotos com setas + bolinhas, no lugar de uma só imagem.
+=================================================================== */
+
+.card-gallery {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.card-gallery-img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  border: 1px solid rgba(201, 162, 75, 0.14);
+  border-radius: var(--radius-md);
+  transition: transform 0.4s var(--ease), opacity 0.15s var(--ease);
+}
+
+.campaign-card:hover .card-gallery-img { transform: scale(1.035); }
+
+.card-gallery-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(9, 8, 11, 0.55);
+  color: #fff;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.card-gallery:hover .card-gallery-arrow { opacity: 1; }
+.card-gallery-arrow:hover { background: rgba(9, 8, 11, 0.82); }
+.card-gallery-arrow:active { transform: translateY(-50%) scale(0.92); }
+.card-gallery-prev { left: 8px; }
+.card-gallery-next { right: 8px; }
+
+.card-gallery-dots {
+  position: absolute;
+  bottom: 9px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  pointer-events: none;
+}
+
+.card-gallery-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.card-gallery-dot.is-active { background: var(--gold-bright); transform: scale(1.3); }
+
+@media (hover: none) {
+  /* Em telas de toque não existe hover — as setas ficam sempre visíveis. */
+  .card-gallery-arrow { opacity: 1; }
+}
+
+/* ===================================================================
+   Preview de fotos selecionadas (antes de enviar) nos formulários
+   de campanha e publicação do admin.
+=================================================================== */
+
+.image-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.image-preview-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(201, 162, 75, 0.25);
+  flex-shrink: 0;
+  animation: campaignCardIn 0.25s var(--ease);
+}
+
+.image-preview-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.image-preview-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(9, 8, 11, 0.75);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview-remove:hover { background: var(--danger); }
+
+/* ===================================================================
+   Visualizador de print (validações) — zoom, arraste e download.
+=================================================================== */
+
+.proof-modal-viewer {
+  position: relative;
+  overflow: auto;
+  border-radius: var(--radius-md);
+  background: #000;
+  max-height: min(60vh, 560px);
+  margin: 14px 0 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 162, 75, 0.3) transparent;
+}
+
+.proof-modal-img {
+  display: block;
+  width: 100%;
+  max-height: min(60vh, 560px);
+  object-fit: contain;
+  cursor: zoom-in;
+  image-rendering: auto;
+}
+
+.proof-modal-img.is-zoomed {
+  max-width: none;
+  max-height: none;
+  object-fit: unset;
+  cursor: zoom-out;
+}
+
+.proof-modal-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.proof-modal-toolbar .btn-mini {
+  flex: 1;
+  text-align: center;
+}
+
+.proof-modal-toolbar .btn-mini:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===================================================================
+   Skeleton de carregamento — blocos com brilho passando por cima,
+   mostrados enquanto os dados do Firebase ainda não chegaram.
+=================================================================== */
+
+@keyframes skeletonShimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.skeleton-line, .skeleton-block, .skeleton-badge, .skeleton-title, .skeleton-td {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.1) 37%, rgba(255, 255, 255, 0.04) 63%);
+  background-size: 400% 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+  border-radius: 6px;
+}
+
+.skeleton-card {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-badge { width: 72px; height: 16px; border-radius: 999px; }
+.skeleton-title { width: 78%; height: 20px; margin-top: 2px; }
+.skeleton-block { width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-md); }
+.skeleton-line { width: 100%; height: 12px; }
+.skeleton-line.short { width: 52%; }
+
+.skeleton-td { display: block; height: 12px; width: 70%; }
+.skeleton-td.w-40 { width: 40%; }
+.skeleton-td.w-90 { width: 90%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line, .skeleton-block, .skeleton-badge, .skeleton-title, .skeleton-td { animation: none; }
 }
