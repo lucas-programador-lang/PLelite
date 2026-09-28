@@ -55,6 +55,90 @@ const STATUS_CLASSES = {
   cancelada: "status-cancelada"
 };
 
+/* ---------- Galeria de fotos nos cards (campanhas e publicações) ---------- */
+// Guarda as fotos de cada card fora do DOM (evita duplicar base64 grande
+// em atributos data-*), indexado pelo próprio id do item no banco — assim
+// campanhas e publicações nunca colidem, mesmo re-renderizando em momentos
+// diferentes uma da outra.
+let galleryStore = {};
+
+function buildGalleryHtml(galleryId, images, altText) {
+  if (!images || images.length === 0) return "";
+
+  galleryStore[galleryId] = images;
+
+  const arrows = images.length > 1
+    ? `<button type="button" class="card-gallery-arrow card-gallery-prev" aria-label="Foto anterior">‹</button>
+       <button type="button" class="card-gallery-arrow card-gallery-next" aria-label="Próxima foto">›</button>`
+    : "";
+
+  const dots = images.length > 1
+    ? `<div class="card-gallery-dots">${images.map((_, i) => `<span class="card-gallery-dot${i === 0 ? " is-active" : ""}"></span>`).join("")}</div>`
+    : "";
+
+  return `
+    <div class="card-gallery" data-gallery-id="${galleryId}" data-index="0">
+      <img class="card-gallery-img" src="${escapeHtml(images[0])}" alt="${escapeHtml(altText || "")}" loading="lazy">
+      ${arrows}
+      ${dots}
+    </div>
+  `;
+}
+
+function updateGallery(galleryEl, images, index) {
+  const normalized = ((index % images.length) + images.length) % images.length;
+  galleryEl.dataset.index = normalized;
+  galleryEl.querySelector(".card-gallery-img").src = images[normalized];
+  galleryEl.querySelectorAll(".card-gallery-dot").forEach((dot, i) => {
+    dot.classList.toggle("is-active", i === normalized);
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const arrow = e.target.closest(".card-gallery-arrow");
+  const dot = e.target.closest(".card-gallery-dot");
+  if (!arrow && !dot) return;
+
+  const galleryEl = e.target.closest(".card-gallery");
+  if (!galleryEl) return;
+  const images = galleryStore[galleryEl.dataset.galleryId];
+  if (!images) return;
+
+  const currentIndex = Number(galleryEl.dataset.index || 0);
+  if (arrow) {
+    const delta = arrow.classList.contains("card-gallery-next") ? 1 : -1;
+    updateGallery(galleryEl, images, currentIndex + delta);
+  } else {
+    const dots = Array.from(galleryEl.querySelectorAll(".card-gallery-dot"));
+    updateGallery(galleryEl, images, dots.indexOf(dot));
+  }
+});
+
+// Arrastar o dedo pra esquerda/direita também troca a foto no celular.
+let galleryTouchStartX = null;
+
+document.addEventListener("touchstart", (e) => {
+  const galleryEl = e.target.closest(".card-gallery");
+  galleryTouchStartX = galleryEl ? e.touches[0].clientX : null;
+}, { passive: true });
+
+document.addEventListener("touchend", (e) => {
+  if (galleryTouchStartX === null) return;
+  const galleryEl = e.target.closest(".card-gallery");
+  const startX = galleryTouchStartX;
+  galleryTouchStartX = null;
+  if (!galleryEl) return;
+
+  const images = galleryStore[galleryEl.dataset.galleryId];
+  if (!images || images.length < 2) return;
+
+  const deltaX = e.changedTouches[0].clientX - startX;
+  if (Math.abs(deltaX) < 40) return;
+
+  const currentIndex = Number(galleryEl.dataset.index || 0);
+  updateGallery(galleryEl, images, currentIndex + (deltaX < 0 ? 1 : -1));
+});
+
 const POST_CATEGORY_LABELS = {
   destaque: "Campanhas em Destaque",
   oportunidades: "Oportunidades",
@@ -282,7 +366,7 @@ function buildCampaignCard(c) {
       <span class="status-tag ${statusClass}">${escapeHtml(statusLabel)}</span>
     </div>
 
-    ${images[0] ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(c.title || "")}" loading="lazy">` : ""}
+    ${buildGalleryHtml(`campaign-${c.id}`, images, c.title)}
 
     ${c.result ? `<span class="status-tag ${c.result === "sucesso" ? "status-ativa" : "status-cancelada"}">${c.result === "sucesso" ? "🟢 Sucesso" : "🔴 Prejuízo"}</span>` : ""}
 
@@ -482,7 +566,7 @@ function buildPostCard(p) {
       </div>
     </div>
 
-    ${images[0] ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(p.title || "")}" style="width:100%;border-radius:var(--radius-md);display:block;">` : ""}
+    ${buildGalleryHtml(`post-${p.id}`, images, p.title)}
 
     <p class="campaign-desc">${escapeHtml(p.description || "")}</p>
 
@@ -590,11 +674,38 @@ function hideProofFeedback() {
   proofFeedback.textContent = "";
 }
 
+// Redimensiona/comprime o print antes de enviar — mantém boa leitura de
+// texto (resolução um pouco maior que a das fotos de campanha/publicação,
+// já que aqui o admin precisa conseguir ler o comprovante) mas evita
+// mandar pro banco uma foto de celular crua de vários MB.
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const maxDimension = 1600;
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          if (width >= height) {
+            height = Math.round(height * (maxDimension / width));
+            width = maxDimension;
+          } else {
+            width = Math.round(width * (maxDimension / height));
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const isPng = file.type === "image/png";
+        resolve(isPng ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", 0.87));
+      };
+      img.src = reader.result;
+    };
     reader.readAsDataURL(file);
   });
 }
