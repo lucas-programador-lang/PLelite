@@ -122,15 +122,25 @@
     </div>
 
     <!-- Conteúdo do dashboard (liberado só após isAuthorized) -->
-    <div id="dashboardContent" class="is-hidden">
+   <!-- Conteúdo do dashboard (liberado só após isAuthorized) -->
+      <div id="dashboardContent" class="is-hidden">
 
-      <div class="app-view is-active" id="view-inicio">
-        <section class="metrics-grid" id="metricsGrid">
-          <div class="metric-card">
-            <span class="metric-label">TOTAL PAGO EM PATROCÍNIOS</span>
-            <span class="metric-value" id="metricRewards">—</span>
+        <div class="app-view is-active" id="view-inicio">
+          
+          <!-- BOTÃO DE DOWNLOAD DA APP -->
+          <div class="download-app-container">
+            <a href="plelite.apk" download="PLElite.apk" class="btn-download-app">
+              Baixar App Android
+            </a>
           </div>
-          <div class="metric-card">
+
+          <section class="metrics-grid" id="metricsGrid">
+            <div class="metric-card">
+              <span class="metric-label">TOTAL PAGO EM PATROCÍNIOS</span>
+              <span class="metric-value" id="metricRewards">—</span>
+            </div>
+          
+            <div class="metric-card">
             <span class="metric-label">TOTAL ARRECADADO P/ SORTEIOS</span>
             <span class="metric-value" id="metricBonusFund">—</span>
           </div>
