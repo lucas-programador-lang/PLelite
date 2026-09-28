@@ -69,6 +69,9 @@ onAuthStateChanged(auth, (user) => {
       bindEditUserModal();
       bindEditCampaignModal();
       bindEditPostModal();
+      bindCampaignFilters();
+      bindPostFilters();
+      bindValidationFilters();
       attachRealtimeListeners();
       listenersAttached = true;
     }
@@ -458,15 +461,27 @@ document.getElementById("campaignForm").addEventListener("submit", async (e) => 
   showToast("Campanha criada!", "success");
 
   e.target.reset();
+  document.getElementById("cImagesPreview").innerHTML = "";
   submitBtn.disabled = false;
 });
 
+function bindCampaignFilters() {
+  document.getElementById("campaignSearch").addEventListener("input", renderCampaignsTable);
+  document.getElementById("campaignStatusFilter").addEventListener("change", renderCampaignsTable);
+}
+
 function renderCampaignsTable() {
   const body = document.getElementById("campaignsTableBody");
-  const entries = Object.entries(campaignsCache);
+  const term = document.getElementById("campaignSearch").value.trim().toLowerCase();
+  const statusFilter = document.getElementById("campaignStatusFilter").value;
+  const entries = Object.entries(campaignsCache).filter(([, c]) => {
+    const matchesTerm = !term || (c.title || "").toLowerCase().includes(term);
+    const matchesStatus = !statusFilter || c.status === statusFilter;
+    return matchesTerm && matchesStatus;
+  });
 
   if (entries.length === 0) {
-    body.innerHTML = `<tr><td colspan="6">Nenhuma campanha cadastrada.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6">Nenhuma campanha encontrada.</td></tr>`;
     return;
   }
 
@@ -643,6 +658,7 @@ function openEditCampaignModal(id) {
   document.getElementById("ecMachines").value = c.machines || "";
   document.getElementById("ecDesc").value = c.description || "";
   document.getElementById("ecImages").value = "";
+  document.getElementById("ecImagesPreview").innerHTML = "";
   const ecCount = c.images && c.images.length ? c.images.length : 0;
   document.getElementById("ecImagesCount").textContent = ecCount ? `(${ecCount} foto${ecCount === 1 ? "" : "s"} atual${ecCount === 1 ? "" : "is"})` : "(nenhuma foto ainda)";
   document.getElementById("ecBudget").value = c.budget || 0;
@@ -726,16 +742,32 @@ document.getElementById("postForm").addEventListener("submit", async (e) => {
   });
 
   e.target.reset();
+  document.getElementById("pImagesPreview").innerHTML = "";
   submitBtn.disabled = false;
   showToast("Publicação criada!", "success");
 });
 
+function bindPostFilters() {
+  document.getElementById("postSearch").addEventListener("input", renderPostsTable);
+  document.getElementById("postStatusFilter").addEventListener("change", renderPostsTable);
+}
+
 function renderPostsTable() {
   const body = document.getElementById("postsTableBody");
-  const entries = Object.entries(postsCache).sort((a, b) => (b[1].date || 0) - (a[1].date || 0));
+  const term = document.getElementById("postSearch").value.trim().toLowerCase();
+  const statusFilter = document.getElementById("postStatusFilter").value;
+  const entries = Object.entries(postsCache)
+    .filter(([, p]) => {
+      const matchesTerm = !term
+        || (p.title || "").toLowerCase().includes(term)
+        || (p.category || "").toLowerCase().includes(term);
+      const matchesStatus = !statusFilter || (p.status || "publicado") === statusFilter;
+      return matchesTerm && matchesStatus;
+    })
+    .sort((a, b) => (b[1].date || 0) - (a[1].date || 0));
 
   if (entries.length === 0) {
-    body.innerHTML = `<tr><td colspan="5">Nenhuma publicação ainda.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5">Nenhuma publicação encontrada.</td></tr>`;
     return;
   }
 
@@ -783,6 +815,7 @@ function openEditPostModal(id) {
   document.getElementById("epCategory").value = p.category || "";
   document.getElementById("epDesc").value = p.description || "";
   document.getElementById("epImages").value = "";
+  document.getElementById("epImagesPreview").innerHTML = "";
   const images = p.images || (p.imageUrl ? [p.imageUrl] : []);
   const epCount = images.length;
   document.getElementById("epImagesCount").textContent = epCount ? `(${epCount} foto${epCount === 1 ? "" : "s"} atual${epCount === 1 ? "" : "is"})` : "(nenhuma foto ainda)";
@@ -831,13 +864,36 @@ function bindEditPostModal() {
 
 /* ---------- Validações (comprovantes) ---------- */
 
-/* ---------- Modal: visualizar print ---------- */
+/* ---------- Modal: visualizar print (com zoom, arraste e download) ---------- */
 
 const imageModal = document.getElementById("imageModal");
 const imageModalImg = document.getElementById("imageModalImg");
+const proofModalViewer = document.getElementById("proofModalViewer");
+const imageModalDownload = document.getElementById("imageModalDownload");
+const imageModalZoomIn = document.getElementById("imageModalZoomIn");
+const imageModalZoomOut = document.getElementById("imageModalZoomOut");
+
+let proofZoomLevel = 1;
+
+function setProofZoom(level) {
+  proofZoomLevel = Math.min(3, Math.max(1, Math.round(level * 4) / 4));
+  if (proofZoomLevel <= 1) {
+    imageModalImg.style.width = "";
+    imageModalImg.classList.remove("is-zoomed");
+  } else {
+    imageModalImg.style.width = `${proofZoomLevel * 100}%`;
+    imageModalImg.classList.add("is-zoomed");
+  }
+  imageModalZoomOut.disabled = proofZoomLevel <= 1;
+  imageModalZoomIn.disabled = proofZoomLevel >= 3;
+}
 
 function openImageModal(src) {
   imageModalImg.src = src;
+  imageModalDownload.href = src;
+  proofModalViewer.scrollTop = 0;
+  proofModalViewer.scrollLeft = 0;
+  setProofZoom(1);
   imageModal.classList.remove("is-hidden");
 }
 
@@ -846,12 +902,67 @@ document.getElementById("imageModalClose").addEventListener("click", () => {
   imageModalImg.src = "";
 });
 
+imageModalZoomIn.addEventListener("click", () => setProofZoom(proofZoomLevel + 0.5));
+imageModalZoomOut.addEventListener("click", () => setProofZoom(proofZoomLevel - 0.5));
+
+// Clique/toque na imagem alterna entre normal e ampliado — jeito rápido
+// de ler letra miúda no comprovante sem precisar dos botões.
+imageModalImg.addEventListener("click", () => setProofZoom(proofZoomLevel > 1 ? 1 : 2));
+
+// Roda do mouse dá zoom (desktop); dentro do modal, não rola a página.
+proofModalViewer.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  setProofZoom(proofZoomLevel + (e.deltaY < 0 ? 0.25 : -0.25));
+}, { passive: false });
+
+// Arrastar com o mouse pra passear pela imagem ampliada (no celular o
+// próprio touch-scroll do navegador já resolve isso).
+let isDraggingProof = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragScrollX = 0;
+let dragScrollY = 0;
+
+proofModalViewer.addEventListener("mousedown", (e) => {
+  if (proofZoomLevel <= 1) return;
+  isDraggingProof = true;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  dragScrollX = proofModalViewer.scrollLeft;
+  dragScrollY = proofModalViewer.scrollTop;
+  proofModalViewer.style.cursor = "grabbing";
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (!isDraggingProof) return;
+  proofModalViewer.scrollLeft = dragScrollX - (e.clientX - dragStartX);
+  proofModalViewer.scrollTop = dragScrollY - (e.clientY - dragStartY);
+});
+
+window.addEventListener("mouseup", () => {
+  isDraggingProof = false;
+  proofModalViewer.style.cursor = "";
+});
+
+function bindValidationFilters() {
+  document.getElementById("validationSearch").addEventListener("input", renderValidationsTable);
+  document.getElementById("validationStatusFilter").addEventListener("change", renderValidationsTable);
+}
+
 function renderValidationsTable() {
   const body = document.getElementById("validationsTableBody");
-  const entries = Object.entries(validationsCache);
+  const term = document.getElementById("validationSearch").value.trim().toLowerCase();
+  const statusFilter = document.getElementById("validationStatusFilter").value;
+  const entries = Object.entries(validationsCache).filter(([, v]) => {
+    const matchesTerm = !term
+      || (v.userName || "").toLowerCase().includes(term)
+      || (v.campaignTitle || "").toLowerCase().includes(term);
+    const matchesStatus = !statusFilter || (v.status || "pendente") === statusFilter;
+    return matchesTerm && matchesStatus;
+  });
 
   if (entries.length === 0) {
-    body.innerHTML = `<tr><td colspan="7">Nenhum comprovante enviado ainda.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7">Nenhum comprovante encontrado.</td></tr>`;
     return;
   }
 
@@ -1224,15 +1335,93 @@ function showConfirm(message) {
 // Converte um FileList (input type="file" multiple) em um array de
 // data URLs base64 — mesma técnica usada no envio de comprovante pelo
 // usuário, só que aceitando vários arquivos de uma vez.
+// Redimensiona/comprime a imagem no navegador antes de virar base64 —
+// fotos de celular costumam vir com vários MB, o que deixa o banco
+// pesado e o carregamento das telas mais lento. Aqui a foto é reduzida
+// para no máximo `maxDimension` px no lado maior e reexportada como
+// JPEG comprimido (mantendo PNG só quando o arquivo já era PNG, para
+// não estragar imagens com transparência, tipo logos).
+function compressImage(file, maxDimension = 1280, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          if (width >= height) {
+            height = Math.round(height * (maxDimension / width));
+            width = maxDimension;
+          } else {
+            width = Math.round(width * (maxDimension / height));
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const isPng = file.type === "image/png";
+        resolve(isPng ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function filesToBase64Array(fileList) {
   const files = Array.from(fileList || []);
-  return Promise.all(files.map((file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  })));
+  return Promise.all(files.map((file) => compressImage(file)));
 }
+
+// Mostra miniaturas dos arquivos escolhidos num input type="file" antes
+// de enviar, com um "x" pra remover algum antes de salvar.
+function bindImagePreview(inputId, previewId) {
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+  if (!input || !preview) return;
+
+  const render = () => {
+    preview.innerHTML = "";
+    Array.from(input.files || []).forEach((file, idx) => {
+      const url = URL.createObjectURL(file);
+      const wrap = document.createElement("div");
+      wrap.className = "image-preview-thumb";
+
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = file.name;
+      img.onload = () => URL.revokeObjectURL(url);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "image-preview-remove";
+      removeBtn.setAttribute("aria-label", "Remover foto");
+      removeBtn.textContent = "×";
+      removeBtn.addEventListener("click", () => {
+        const dt = new DataTransfer();
+        Array.from(input.files).forEach((f, i) => { if (i !== idx) dt.items.add(f); });
+        input.files = dt.files;
+        render();
+      });
+
+      wrap.appendChild(img);
+      wrap.appendChild(removeBtn);
+      preview.appendChild(wrap);
+    });
+  };
+
+  input.addEventListener("change", render);
+}
+
+bindImagePreview("cImages", "cImagesPreview");
+bindImagePreview("ecImages", "ecImagesPreview");
+bindImagePreview("pImages", "pImagesPreview");
+bindImagePreview("epImages", "epImagesPreview");
 
 function escapeHtml(str) {
   const div = document.createElement("div");
