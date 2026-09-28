@@ -13,7 +13,7 @@ Paleta: preto profundo + dourado. Glassmorphism sóbrio, mobile-first.
 --glass-bg-strong: rgba(255, 255, 255, 0.035);
 --glass-border: rgba(201, 162, 75, 0.2);
 --text-primary: #f2ede2;
---text-muted: #948c7c;
+--text-muted: #a39a89;
 --danger: #e0654b;
 --success: #5fb98a;
 
@@ -29,7 +29,7 @@ Paleta: preto profundo + dourado. Glassmorphism sóbrio, mobile-first.
 --sidebar-w-mobile: 292px;
 }
 
-{ box-sizing: border-box; }
+* { box-sizing: border-box; }
 
 html, body {
 margin: 0;
@@ -41,11 +41,46 @@ font-family: var(--font-body);
 -webkit-font-smoothing: antialiased;
 }
 
+/* Scrollbar fina e dourada em toda a aplicação no desktop, no lugar da
+   barra cinza padrão do navegador. */
+html {
+scrollbar-width: thin;
+scrollbar-color: rgba(201, 162, 75, 0.3) transparent;
+}
+html::-webkit-scrollbar { width: 9px; height: 9px; }
+html::-webkit-scrollbar-track { background: var(--bg-void); }
+html::-webkit-scrollbar-thumb {
+background: rgba(201, 162, 75, 0.28);
+border-radius: 999px;
+border: 2px solid var(--bg-void);
+}
+html::-webkit-scrollbar-thumb:hover { background: rgba(201, 162, 75, 0.45); }
+
+/* Contorno de foco consistente (teclado/acessibilidade), dourado. */
+:focus-visible {
+outline: 2px solid var(--gold);
+outline-offset: 2px;
+border-radius: 4px;
+}
+
 body {
+position: relative;
 background:
 radial-gradient(ellipse 900px 600px at 15% 20%, rgba(201, 162, 75, 0.10), transparent 60%),
-radial-gradient(ellipse 700px 500px at 85% 85%, rgba(201, 162, 75, 0.06), transparent 60%),
+radial-gradient(ellipse 700px 500px at 85% 85%, rgba(201, 162, 75, 0.065), transparent 60%),
+radial-gradient(ellipse 640px 480px at 90% 10%, rgba(120, 140, 160, 0.045), transparent 65%),
 var(--bg-void);
+}
+
+/* Vinheta fixa e sutil escurecendo os cantos — dá profundidade ao fundo
+   mesmo com a página rolada, sem atrapalhar a leitura do conteúdo. */
+body::before {
+content: "";
+position: fixed;
+inset: 0;
+pointer-events: none;
+z-index: 0;
+background: radial-gradient(ellipse 120% 100% at 50% 0%, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
 }
 
 button, input { font-family: inherit; }
@@ -935,6 +970,21 @@ border-right: 1px solid rgba(201, 162, 75, 0.2);
 .sidebar-overlay { display: none !important; }
 }
 
+/* ---- Tablet / desktop pequeno (901–1180px): a sidebar fixa toma bastante
+   espaço aqui, então reduz colunas pra não espremer o conteúdo. ---- */
+@media (min-width: 901px) and (max-width: 1180px) {
+.metrics-grid { grid-template-columns: repeat(2, 1fr); }
+.app-main { padding: 26px 20px 56px; }
+}
+
+/* ---- Telas grandes de desktop: aproveita melhor o espaço extra em vez de
+   deixar tudo esticado ou com sobra vazia dos lados. ---- */
+@media (min-width: 1600px) {
+.app-body { max-width: 1600px; }
+.campaign-grid { grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 22px; }
+.metrics-grid { gap: 20px; }
+}
+
 /* Estado pendente / bloqueado */
 
 .gate-screen {
@@ -1109,7 +1159,7 @@ padding: 22px;
 display: flex;
 flex-direction: column;
 gap: 13px;
-box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
+box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 transition: border-color 0.22s var(--ease), transform 0.22s var(--ease), box-shadow 0.22s var(--ease);
 animation: campaignCardIn 0.5s var(--ease) backwards;
 }
@@ -1151,7 +1201,7 @@ pointer-events: none;
 .campaign-card:hover {
 border-color: rgba(201, 162, 75, 0.3);
 transform: translateY(-3px);
-box-shadow: 0 20px 44px rgba(0, 0, 0, 0.32);
+box-shadow: 0 20px 44px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .campaign-card:hover::after { opacity: 1; }
@@ -1434,7 +1484,7 @@ border: 1px solid var(--glass-border);
 border-radius: var(--radius-lg);
 padding: 26px 24px 24px;
 margin-bottom: 24px;
-box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 overflow: hidden;
 }
 
@@ -2333,48 +2383,180 @@ gap: 12px;
 }
 
 /* --- BOTÃO FLUTUANTE APK --- */
+/* Segue a mesma paleta preto + dourado do resto do site (antes usava um
+   verde Android que destoava de tudo), com brilho pulsando pra chamar
+   atenção sem ser irritante, e área de toque confortável no celular. */
 .btn-flutuante-apk {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background-color: #3DDC84; /* Verde Android */
-    color: #111111;
-    text-decoration: none;
-    font-family: 'Manrope', sans-serif;
-    font-weight: 800;
-    font-size: 14px;
-    padding: 12px 24px;
-    border-radius: 50px; /* Formato de pílula */
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-    transition: transform 0.2s ease, background-color 0.2s ease;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  right: calc(24px + env(safe-area-inset-right, 0px));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #0c0a08;
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
+  padding: 12px 22px 12px 12px;
+  border-radius: 999px;
+  box-shadow: 0 10px 28px rgba(201, 162, 75, 0.35), 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease);
+  animation: apkButtonIn 0.5s var(--ease) 0.3s backwards, apkButtonGlow 3.2s ease-in-out 1.2s infinite;
 }
 
-/* Ajuste específico para a tua logo dentro do botão */
 .btn-flutuante-apk .flutuante-logo {
-    height: 18px; /* Altura ideal para não deformar o botão */
-    width: auto;
-    object-fit: contain;
+  height: 30px;
+  width: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-void);
+  flex-shrink: 0;
 }
 
 .btn-flutuante-apk:hover {
-    background-color: #2ebc6d;
-    transform: scale(1.05) translateY(-2px); /* Efeito de saltar */
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 14px 34px rgba(201, 162, 75, 0.45), 0 6px 16px rgba(0, 0, 0, 0.45);
+  animation-play-state: paused;
 }
 
-/* No telemóvel, esconde o texto para não tapar o ecrã e deixa só a logo/botão compacto */
+.btn-flutuante-apk:active { transform: scale(0.97) translateY(0); }
+
+@keyframes apkButtonIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes apkButtonGlow {
+  0%, 100% { box-shadow: 0 10px 28px rgba(201, 162, 75, 0.35), 0 4px 14px rgba(0, 0, 0, 0.4); }
+  50% { box-shadow: 0 10px 34px rgba(201, 162, 75, 0.6), 0 4px 14px rgba(0, 0, 0, 0.4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-flutuante-apk { animation: none; }
+}
+
+/* No celular, esconde o texto e deixa só o círculo com a logo, mais
+   compacto e sem tapar o conteúdo da tela. */
 @media (max-width: 480px) {
-    .btn-flutuante-apk {
-        bottom: 16px;
-        right: 16px;
-        padding: 12px 16px;
-        font-size: 0; /* Esconde o texto "Baixe o App" */
-    }
-    .btn-flutuante-apk .flutuante-logo {
-        height: 22px; /* Deixa a logo ligeiramente maior no mobile */
-        margin: 0;
-    }
+  .btn-flutuante-apk {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    padding: 8px;
+  }
+  .btn-flutuante-apk span { display: none; }
+  .btn-flutuante-apk .flutuante-logo { height: 40px; width: 40px; }
+}
+
+/* ===================================================================
+   Página "Baixar o app" (baixar.html) — reaproveita .stage/.brand-panel/
+   .auth-card do login para manter 100% a identidade visual do site.
+=================================================================== */
+
+.logo-float { animation: logoFloat 4.5s ease-in-out infinite; }
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.download-card { animation: downloadCardIn 0.55s var(--ease) backwards; }
+
+@keyframes downloadCardIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.btn-download-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
+  animation: downloadBtnGlow 3.2s ease-in-out 1s infinite;
+}
+
+@keyframes downloadBtnGlow {
+  0%, 100% { box-shadow: 0 10px 24px rgba(201, 162, 75, 0.18); }
+  50% { box-shadow: 0 10px 30px rgba(201, 162, 75, 0.4); }
+}
+
+.download-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 18px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.download-divider::before,
+.download-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(201, 162, 75, 0.18);
+}
+
+.download-qr-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 22px;
+  animation: downloadCardIn 0.55s var(--ease) 0.1s backwards;
+}
+
+.download-qr-wrap img { display: block; border-radius: 6px; }
+
+.download-steps {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(201, 162, 75, 0.14);
+  border-radius: var(--radius-md);
+  padding: 20px 20px 18px;
+  animation: downloadCardIn 0.55s var(--ease) 0.18s backwards;
+}
+
+.download-steps h3 {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.download-steps ol {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.download-steps li { margin-bottom: 6px; }
+.download-steps li:last-child { margin-bottom: 0; }
+.download-steps b { color: var(--text-primary); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-float,
+  .download-card,
+  .btn-download-main,
+  .download-qr-wrap,
+  .download-steps {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .download-qr-wrap { padding: 10px; }
 }
