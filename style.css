@@ -2340,22 +2340,24 @@ gap: 12px;
     z-index: 9999;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     background-color: #3DDC84; /* Verde Android */
     color: #111111;
     text-decoration: none;
     font-family: 'Manrope', sans-serif;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 14px;
-    padding: 14px 24px;
+    padding: 12px 24px;
     border-radius: 50px; /* Formato de pílula */
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
     transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
-.btn-flutuante-apk svg {
-    width: 20px;
-    height: 20px;
+/* Ajuste específico para a tua logo dentro do botão */
+.btn-flutuante-apk .flutuante-logo {
+    height: 18px; /* Altura ideal para não deformar o botão */
+    width: auto;
+    object-fit: contain;
 }
 
 .btn-flutuante-apk:hover {
@@ -2363,15 +2365,16 @@ gap: 12px;
     transform: scale(1.05) translateY(-2px); /* Efeito de saltar */
 }
 
-/* Esconder o botão flutuante em ecrãs muito pequenos para não tapar o conteúdo */
+/* No telemóvel, esconde o texto para não tapar o ecrã e deixa só a logo/botão compacto */
 @media (max-width: 480px) {
     .btn-flutuante-apk {
         bottom: 16px;
         right: 16px;
         padding: 12px 16px;
-        font-size: 0; /* Esconde o texto */
+        font-size: 0; /* Esconde o texto "Baixe o App" */
     }
-    .btn-flutuante-apk svg {
+    .btn-flutuante-apk .flutuante-logo {
+        height: 22px; /* Deixa a logo ligeiramente maior no mobile */
         margin: 0;
     }
 }
