@@ -122,24 +122,14 @@
     </div>
 
     <!-- Conteúdo do dashboard (liberado só após isAuthorized) -->
-   <!-- Conteúdo do dashboard (liberado só após isAuthorized) -->
       <div id="dashboardContent" class="is-hidden">
 
         <div class="app-view is-active" id="view-inicio">
-          
-          <!-- BOTÃO DE DOWNLOAD DA APP -->
-          <div class="download-app-container">
-            <a href="plelite.apk" download="PLElite.apk" class="btn-download-app">
-              Baixar App Android
-            </a>
-          </div>
-
           <section class="metrics-grid" id="metricsGrid">
             <div class="metric-card">
               <span class="metric-label">TOTAL PAGO EM PATROCÍNIOS</span>
               <span class="metric-value" id="metricRewards">—</span>
             </div>
-          
             <div class="metric-card">
             <span class="metric-label">TOTAL ARRECADADO P/ SORTEIOS</span>
             <span class="metric-value" id="metricBonusFund">—</span>
@@ -325,6 +315,16 @@
   </div>
 
 </div>
+
+<!-- BOTÃO FLUTUANTE DE DOWNLOAD -->
+<a href="plelite.apk" download="PLElite.apk" class="btn-flutuante-apk">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <polyline points="7 10 12 15 17 10"></polyline>
+    <line x1="12" y1="15" x2="12" y2="3"></line>
+  </svg>
+  Baixar App
+</a>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script type="module" src="firebase-config.js"></script>
