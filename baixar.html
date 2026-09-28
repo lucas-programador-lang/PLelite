@@ -2,119 +2,89 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Baixar App - PL ELITE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Baixe o aplicativo oficial PL Elite para Android e acompanhe campanhas, patrocínios e recompensas direto do celular.">
 <link rel="icon" type="image/png" href="assets/logo-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-    body {
-        margin: 0;
-        padding: 0;
-        background-color: #0f1014;
-        color: #ffffff;
-        font-family: 'Manrope', sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        text-align: center;
-    }
-    .container {
-        max-width: 400px;
-        padding: 40px 20px;
-    }
-    .logo {
-        width: 100%;
-        max-width: 200px; /* Aumentado para acomodar a logo full */
-        margin-bottom: 32px;
-        filter: drop-shadow(0 10px 30px rgba(201, 162, 75, 0.2));
-    }
-    h1 {
-        font-weight: 800;
-        font-size: 28px;
-        margin: 0 0 12px;
-    }
-    p {
-        color: #a0a0a0;
-        font-size: 16px;
-        line-height: 1.5;
-        margin-bottom: 32px;
-    }
-    .btn-download {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        background-color: #3DDC84;
-        color: #111;
-        text-decoration: none;
-        font-weight: 800;
-        font-size: 18px;
-        padding: 16px 32px;
-        border-radius: 50px;
-        width: 100%;
-        box-sizing: border-box;
-        box-shadow: 0 8px 24px rgba(61, 220, 132, 0.3);
-        transition: transform 0.2s;
-    }
-    .btn-download:active {
-        transform: scale(0.96);
-    }
-    .instructions {
-        margin-top: 48px;
-        background: #1a1c23;
-        padding: 24px;
-        border-radius: 16px;
-        text-align: left;
-    }
-    .instructions h3 {
-        margin-top: 0;
-        font-size: 14px;
-        color: #3DDC84;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    .instructions ol {
-        margin: 0;
-        padding-left: 20px;
-        color: #d1d1d1;
-        font-size: 14px;
-        line-height: 1.6;
-    }
-    .instructions li {
-        margin-bottom: 8px;
-    }
-</style>
+<title>PL ELITE — Baixar App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="container">
-        <!-- Logo alterada para logo-full.png -->
-        <img src="assets/logo-full.png" alt="PL Elite Logo" class="logo">
-        
-        <h1>O Dashboard no seu bolso.</h1>
-        <p>Acompanhe campanhas, patrocínios e recompensas de forma rápida com o nosso aplicativo oficial para Android.</p>
-        
-        <a href="plelite.apk" download="PLElite.apk" class="btn-download">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Baixar o APK
-        </a>
+<div class="stage">
 
-        <div class="instructions">
-            <h3>Como Instalar:</h3>
-            <ol>
-                <li>Toque no botão de download acima.</li>
-                <li>Quando o download terminar, abra o ficheiro <b>PLElite.apk</b>.</li>
-                <li>Se o Android pedir, autorize a instalação de <b>"Fontes Desconhecidas"</b>.</li>
-                <li>Clique em Instalar e pronto!</li>
-            </ol>
-        </div>
+  <aside class="brand-panel">
+    <div class="orbit-wrap" aria-hidden="true">
+      <div class="orbit-ring"></div>
+      <div class="orbit-dot"></div>
     </div>
 
+    <div class="brand-content">
+      <h1 class="brand-logo-wrap">
+        <img class="brand-logo logo-float" src="assets/logo-full.png" alt="PL Elite">
+      </h1>
+      <span class="brand-eyebrow">APLICATIVO OFICIAL &middot; ANDROID</span>
+      <p class="brand-tagline">O dashboard da PL Elite no seu bolso. Acompanhe campanhas, valide entregas e resgate recompensas de onde você estiver.</p>
+
+      <ul class="brand-stats" role="list">
+        <li><span class="stat-num">01</span><span class="stat-label">Baixe o APK</span></li>
+        <li><span class="stat-num">02</span><span class="stat-label">Instale com um toque</span></li>
+        <li><span class="stat-num">03</span><span class="stat-label">Acesse suas campanhas</span></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="auth-panel">
+    <div class="auth-card download-card">
+
+      <div class="auth-heading">
+        <h2>Baixar o app</h2>
+        <p>Instale o aplicativo oficial da PL Elite e leve seu dashboard pra qualquer lugar.</p>
+      </div>
+
+      <a href="plelite.apk" download="PLElite.apk" class="btn-primary btn-download-main">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Baixar APK agora</span>
+      </a>
+
+      <div class="download-divider"><span>ou escaneie no celular</span></div>
+
+      <div class="download-qr-wrap" id="downloadQr" aria-label="QR code para baixar o aplicativo"></div>
+
+      <div class="download-steps">
+        <h3>Como instalar</h3>
+        <ol>
+          <li>Toque em <b>Baixar APK agora</b> — ou escaneie o QR code com a câmera do celular.</li>
+          <li>Quando o download terminar, abra o arquivo <b>PLElite.apk</b>.</li>
+          <li>Se o Android pedir, autorize a instalação de <b>fontes desconhecidas</b>.</li>
+          <li>Toque em Instalar — pronto, é só entrar com sua conta.</li>
+        </ol>
+      </div>
+
+      <p class="auth-switch"><a href="index.html">&larr; Voltar para o site</a></p>
+    </div>
+  </main>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+  var qrTarget = document.getElementById("downloadQr");
+  if (qrTarget && window.QRCode) {
+    new QRCode(qrTarget, {
+      text: new URL("plelite.apk", window.location.href).href,
+      width: 152,
+      height: 152,
+      colorDark: "#0c0a08",
+      colorLight: "#f2ede2"
+    });
+  }
+</script>
 </body>
 </html>
