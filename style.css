@@ -1100,7 +1100,9 @@ img.sidebar-brand-mark {
 
 .campaign-card {
   position: relative;
-  background: var(--glass-bg-strong);
+  background:
+    radial-gradient(ellipse 260px 160px at 100% 0%, rgba(201, 162, 75, 0.07), transparent 70%),
+    var(--glass-bg-strong);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 22px;
@@ -1109,6 +1111,26 @@ img.sidebar-brand-mark {
   gap: 13px;
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
   transition: border-color 0.22s var(--ease), transform 0.22s var(--ease), box-shadow 0.22s var(--ease);
+  animation: campaignCardIn 0.5s var(--ease) backwards;
+}
+
+/* Entrada suave dos cards ao carregar a lista — em vez de aparecer tudo
+   de uma vez, sobe levemente com um leve fade. Os primeiros cards saem
+   um pouquinho antes dos últimos (efeito cascata). */
+@keyframes campaignCardIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.campaign-grid > .campaign-card:nth-child(1) { animation-delay: 0.02s; }
+.campaign-grid > .campaign-card:nth-child(2) { animation-delay: 0.07s; }
+.campaign-grid > .campaign-card:nth-child(3) { animation-delay: 0.12s; }
+.campaign-grid > .campaign-card:nth-child(4) { animation-delay: 0.17s; }
+.campaign-grid > .campaign-card:nth-child(5) { animation-delay: 0.22s; }
+.campaign-grid > .campaign-card:nth-child(n+6) { animation-delay: 0.26s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .campaign-card { animation: none; }
 }
 
 .campaign-card::after {
@@ -1141,7 +1163,10 @@ img.sidebar-brand-mark {
   border-radius: var(--radius-md);
   display: block;
   border: 1px solid rgba(201, 162, 75, 0.14);
+  transition: transform 0.4s var(--ease);
 }
+
+.campaign-card:hover img { transform: scale(1.035); }
 
 .campaign-top {
   display: flex;
@@ -1151,30 +1176,47 @@ img.sidebar-brand-mark {
 }
 
 .campaign-category {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--gold-dim);
-  padding: 3px 8px;
-  border-radius: 5px;
-  background: rgba(201, 162, 75, 0.08);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  padding: 4px 9px 4px 7px;
+  border-radius: 999px;
+  background: rgba(201, 162, 75, 0.1);
+  border: 1px solid rgba(201, 162, 75, 0.16);
+}
+
+.campaign-category::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold-bright);
+  box-shadow: 0 0 6px 1px rgba(236, 206, 138, 0.7);
+  flex-shrink: 0;
 }
 
 .campaign-title {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 500;
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   color: var(--text-primary);
-  letter-spacing: -0.005em;
-  line-height: 1.3;
+  letter-spacing: -0.01em;
+  line-height: 1.32;
+  transition: color 0.22s var(--ease);
 }
 
+.campaign-card:hover .campaign-title { color: var(--gold-bright); }
+
 .campaign-desc {
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 13.5px;
+  line-height: 1.65;
   color: var(--text-muted);
   margin: 0;
 }
@@ -1190,7 +1232,25 @@ img.sidebar-brand-mark {
   white-space: nowrap;
 }
 
-.status-ativa { background: rgba(95, 185, 138, 0.14); color: var(--success); border: 1px solid rgba(95, 185, 138, 0.3); }
+.status-ativa { background: rgba(95, 185, 138, 0.14); color: var(--success); border: 1px solid rgba(95, 185, 138, 0.3); position: relative; }
+.status-ativa::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  margin-right: 5px;
+  vertical-align: middle;
+  animation: statusPulse 1.8s ease-in-out infinite;
+}
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(95, 185, 138, 0.5); }
+  50% { opacity: 0.55; box-shadow: 0 0 0 4px rgba(95, 185, 138, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-ativa::before { animation: none; }
+}
 .status-andamento { background: rgba(90, 150, 224, 0.14); color: #8fb8ec; border: 1px solid rgba(90, 150, 224, 0.3); }
 .status-concluida { background: rgba(201, 162, 75, 0.16); color: var(--gold-bright); border: 1px solid rgba(201, 162, 75, 0.35); }
 .status-cancelada { background: rgba(224, 101, 75, 0.14); color: var(--danger); border: 1px solid rgba(224, 101, 75, 0.3); }
