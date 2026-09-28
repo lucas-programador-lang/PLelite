@@ -136,7 +136,8 @@
                 <tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Nível</th><th>Ações</th></tr>
               </thead>
               <tbody id="usersTableBody">
-                <tr><td colspan="5">Carregando…</td></tr>
+                <tr><td colspan="5"><span class="skeleton-td w-90"></span></td></tr>
+                <tr><td colspan="5"><span class="skeleton-td w-40"></span></td></tr>
               </tbody>
             </table>
           </div>
@@ -152,7 +153,7 @@
             <div class="field"><label for="cPlan">Plano exigido</label><input type="text" id="cPlan" placeholder="ex: Bronze, Prata, Ouro"></div>
             <div class="field"><label for="cMachines">Máquinas/planos envolvidos</label><input type="text" id="cMachines" placeholder="ex: Máquina A, Plano Turbo"></div>
             <div class="field field-full"><label for="cDesc">Descrição</label><textarea id="cDesc"></textarea></div>
-            <div class="field field-full"><label for="cImages">Fotos</label><input type="file" id="cImages" accept="image/*" multiple></div>
+            <div class="field field-full"><label for="cImages">Fotos</label><input type="file" id="cImages" accept="image/*" multiple><div class="image-preview-row" id="cImagesPreview"></div></div>
             <div class="field"><label for="cBudget">Orçamento (R$)</label><input type="number" id="cBudget" min="0" step="0.01"></div>
             <div class="field"><label for="cMaxSlots">Limite de vagas</label><input type="number" id="cMaxSlots" min="1" value="3"></div>
             <div class="field"><label for="cStart">Data de início</label><input type="date" id="cStart"></div>
@@ -171,13 +172,24 @@
 
         <div class="panel-block">
           <h3>Campanhas cadastradas</h3>
+          <div class="toolbar">
+            <input type="search" id="campaignSearch" placeholder="Buscar por nome da campanha…">
+            <select id="campaignStatusFilter">
+              <option value="">Todos os status</option>
+              <option value="ativa">Ativa</option>
+              <option value="andamento">Em andamento</option>
+              <option value="concluida">Concluída</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
           <div style="overflow-x:auto;">
             <table class="data-table">
               <thead>
                 <tr><th>Campanha</th><th>Vagas</th><th>Status</th><th>Resultado</th><th>Período</th><th>Ações</th></tr>
               </thead>
               <tbody id="campaignsTableBody">
-                <tr><td colspan="6">Carregando…</td></tr>
+                <tr><td colspan="6"><span class="skeleton-td w-90"></span></td></tr>
+                <tr><td colspan="6"><span class="skeleton-td w-40"></span></td></tr>
               </tbody>
             </table>
           </div>
@@ -201,7 +213,7 @@
               </datalist>
             </div>
             <div class="field field-full"><label for="pDesc">Descrição</label><textarea id="pDesc"></textarea></div>
-            <div class="field field-full"><label for="pImages">Fotos</label><input type="file" id="pImages" accept="image/*" multiple></div>
+            <div class="field field-full"><label for="pImages">Fotos</label><input type="file" id="pImages" accept="image/*" multiple><div class="image-preview-row" id="pImagesPreview"></div></div>
             <div class="field"><label for="pLink">Link de redirecionamento</label><input type="text" id="pLink" placeholder="https://…"></div>
             <div class="field">
               <label for="pStatus">Status</label>
@@ -219,10 +231,22 @@
 
         <div class="panel-block">
           <h3>Publicações</h3>
+          <div class="toolbar">
+            <input type="search" id="postSearch" placeholder="Buscar por título ou categoria…">
+            <select id="postStatusFilter">
+              <option value="">Todos os status</option>
+              <option value="publicado">Publicado</option>
+              <option value="rascunho">Rascunho</option>
+              <option value="arquivado">Arquivado</option>
+            </select>
+          </div>
           <div style="overflow-x:auto;">
             <table class="data-table">
               <thead><tr><th>Título</th><th>Categoria</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
-              <tbody id="postsTableBody"><tr><td colspan="5">Carregando…</td></tr></tbody>
+              <tbody id="postsTableBody">
+                <tr><td colspan="5"><span class="skeleton-td w-90"></span></td></tr>
+                <tr><td colspan="5"><span class="skeleton-td w-40"></span></td></tr>
+              </tbody>
             </table>
           </div>
         </div>
@@ -232,10 +256,22 @@
       <section class="admin-section" id="tab-validations">
         <div class="panel-block">
           <h3>Comprovantes enviados pelos usuários</h3>
+          <div class="toolbar">
+            <input type="search" id="validationSearch" placeholder="Buscar por usuário ou campanha…">
+            <select id="validationStatusFilter">
+              <option value="">Todos os status</option>
+              <option value="pendente">Pendente</option>
+              <option value="aprovado">Aprovado</option>
+              <option value="rejeitado">Rejeitado</option>
+            </select>
+          </div>
           <div style="overflow-x:auto;">
             <table class="data-table">
               <thead><tr><th>Usuário</th><th>Campanha</th><th>Período</th><th>Observações</th><th>Print</th><th>Status</th><th>Ações</th></tr></thead>
-              <tbody id="validationsTableBody"><tr><td colspan="7">Carregando…</td></tr></tbody>
+              <tbody id="validationsTableBody">
+                <tr><td colspan="7"><span class="skeleton-td w-90"></span></td></tr>
+                <tr><td colspan="7"><span class="skeleton-td w-40"></span></td></tr>
+              </tbody>
             </table>
           </div>
         </div>
@@ -252,7 +288,7 @@
                 <tr><th>Usuário</th><th>Campanha</th><th>Participações</th><th>Valor</th><th>Entrada</th><th>Finalização</th><th>Saque</th><th>Resultado</th><th>Status</th></tr>
               </thead>
               <tbody id="historyTableBody">
-                <tr><td colspan="9">Carregando…</td></tr>
+                <tr><td colspan="9"><span class="skeleton-td w-90"></span></td></tr>
               </tbody>
             </table>
           </div>
@@ -279,7 +315,7 @@
           <div style="overflow-x:auto;">
             <table class="data-table">
               <thead><tr><th>Nome</th><th>E-mail</th><th>Ações</th></tr></thead>
-              <tbody id="raffleTableBody"><tr><td colspan="3">Carregando…</td></tr></tbody>
+              <tbody id="raffleTableBody"><tr><td colspan="3"><span class="skeleton-td w-90"></span></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -318,7 +354,7 @@
           <div style="overflow-x:auto;">
             <table class="data-table">
               <thead><tr><th>Título</th><th>Tipo</th><th>Destinatário</th><th>Data</th><th>Ações</th></tr></thead>
-              <tbody id="notifsTableBody"><tr><td colspan="5">Carregando…</td></tr></tbody>
+              <tbody id="notifsTableBody"><tr><td colspan="5"><span class="skeleton-td w-90"></span></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -332,7 +368,7 @@
           <div style="overflow-x:auto;">
             <table class="data-table">
               <thead><tr><th>Quando</th><th>Admin</th><th>Ação</th></tr></thead>
-              <tbody id="auditTableBody"><tr><td colspan="3">Carregando…</td></tr></tbody>
+              <tbody id="auditTableBody"><tr><td colspan="3"><span class="skeleton-td w-90"></span></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -371,7 +407,7 @@
         <div class="field"><label for="ecPlan">Plano exigido</label><input type="text" id="ecPlan"></div>
         <div class="field"><label for="ecMachines">Máquinas/planos envolvidos</label><input type="text" id="ecMachines"></div>
         <div class="field"><label for="ecDesc">Descrição</label><textarea id="ecDesc"></textarea></div>
-        <div class="field"><label for="ecImages">Fotos <span id="ecImagesCount" style="font-weight:400;color:var(--text-muted);"></span></label><input type="file" id="ecImages" accept="image/*" multiple><p style="font-size:11px;color:var(--text-muted);margin:4px 0 0;">Selecione novos arquivos só se quiser substituir as fotos atuais.</p></div>
+        <div class="field"><label for="ecImages">Fotos <span id="ecImagesCount" style="font-weight:400;color:var(--text-muted);"></span></label><input type="file" id="ecImages" accept="image/*" multiple><div class="image-preview-row" id="ecImagesPreview"></div><p style="font-size:11px;color:var(--text-muted);margin:4px 0 0;">Selecione novos arquivos só se quiser substituir as fotos atuais.</p></div>
         <div class="field"><label for="ecBudget">Orçamento (R$)</label><input type="number" id="ecBudget" min="0" step="0.01"></div>
         <div class="field"><label for="ecMaxSlots">Limite de vagas</label><input type="number" id="ecMaxSlots" min="1"></div>
         <div class="field"><label for="ecStart">Data de início</label><input type="date" id="ecStart"></div>
@@ -401,7 +437,7 @@
           <input type="text" id="epCategory" list="postCategoryOptions" placeholder="ex: Oportunidades">
         </div>
         <div class="field"><label for="epDesc">Descrição</label><textarea id="epDesc"></textarea></div>
-        <div class="field"><label for="epImages">Fotos <span id="epImagesCount" style="font-weight:400;color:var(--text-muted);"></span></label><input type="file" id="epImages" accept="image/*" multiple><p style="font-size:11px;color:var(--text-muted);margin:4px 0 0;">Selecione novos arquivos só se quiser substituir as fotos atuais.</p></div>
+        <div class="field"><label for="epImages">Fotos <span id="epImagesCount" style="font-weight:400;color:var(--text-muted);"></span></label><input type="file" id="epImages" accept="image/*" multiple><div class="image-preview-row" id="epImagesPreview"></div><p style="font-size:11px;color:var(--text-muted);margin:4px 0 0;">Selecione novos arquivos só se quiser substituir as fotos atuais.</p></div>
         <div class="field"><label for="epLink">Link de redirecionamento</label><input type="text" id="epLink"></div>
         <div class="field">
           <label for="epStatus">Status</label>
@@ -423,7 +459,14 @@
   <div class="modal-overlay is-hidden" id="imageModal">
     <div class="modal-card" style="max-width:640px;">
       <h3>Comprovante</h3>
-      <img id="imageModalImg" src="" alt="Comprovante enviado" class="proof-modal-img">
+      <div class="proof-modal-viewer" id="proofModalViewer">
+        <img id="imageModalImg" src="" alt="Comprovante enviado" class="proof-modal-img">
+      </div>
+      <div class="proof-modal-toolbar">
+        <button type="button" class="btn-mini" id="imageModalZoomOut" aria-label="Diminuir zoom">− Zoom</button>
+        <button type="button" class="btn-mini" id="imageModalZoomIn" aria-label="Aumentar zoom">+ Zoom</button>
+        <a class="btn-mini" id="imageModalDownload" download="comprovante.jpg">⤓ Baixar</a>
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn-mini" id="imageModalClose" style="width:100%;">Fechar</button>
       </div>
