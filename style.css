@@ -81,6 +81,16 @@ inset: 0;
 pointer-events: none;
 z-index: 0;
 background: radial-gradient(ellipse 120% 100% at 50% 0%, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
+animation: vignetteBreathe 10s ease-in-out infinite;
+}
+
+@keyframes vignetteBreathe {
+0%, 100% { opacity: 1; }
+50% { opacity: 0.72; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+body::before { animation: none; }
 }
 
 button, input { font-family: inherit; }
@@ -476,6 +486,8 @@ color: #b9e4cd;
 /* Botão principal */
 
 .btn-primary {
+position: relative;
+overflow: hidden;
 margin-top: 6px;
 border: none;
 border-radius: var(--radius-lg);
@@ -487,6 +499,27 @@ font-weight: 700;
 cursor: pointer;
 transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), opacity 0.18s var(--ease);
 box-shadow: 0 10px 24px rgba(201, 162, 75, 0.18);
+}
+
+/* Brilho passando na diagonal ao passar o mouse — detalhe premium nos
+   botões principais (confirmar, baixar app etc.). */
+.btn-primary::after {
+content: "";
+position: absolute;
+top: 0;
+left: -60%;
+width: 40%;
+height: 100%;
+background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+transform: skewX(-20deg);
+transition: left 0.55s var(--ease);
+pointer-events: none;
+}
+
+.btn-primary:hover::after { left: 130%; }
+
+@media (prefers-reduced-motion: reduce) {
+.btn-primary::after { display: none; }
 }
 
 .btn-primary:focus-visible {
@@ -517,6 +550,8 @@ left: 50%;
 width: 16px;
 height: 16px;
 margin: -8px 0 0 -8px;
+background: none;
+transform: none;
 border-radius: 50%;
 border: 2px solid rgba(12, 10, 8, 0.35);
 border-top-color: #0c0a08;
@@ -728,7 +763,25 @@ color: var(--text-primary);
 letter-spacing: 0.01em;
 }
 
-.sidebar-brand-name span { color: var(--gold-bright); font-style: italic; }
+.sidebar-brand-name span {
+color: var(--gold-bright);
+font-style: italic;
+background: linear-gradient(100deg, var(--gold-dim) 30%, var(--gold-bright) 45%, #fff6e0 50%, var(--gold-bright) 55%, var(--gold-dim) 70%);
+background-size: 220% 100%;
+background-clip: text;
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+animation: brandShimmer 5s ease-in-out infinite;
+}
+
+@keyframes brandShimmer {
+0%, 100% { background-position: 200% 0; }
+50% { background-position: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+.sidebar-brand-name span { animation: none; -webkit-text-fill-color: var(--gold-bright); }
+}
 
 .sidebar-brand-tagline {
 font-family: var(--font-mono);
@@ -1877,6 +1930,12 @@ align-items: center;
 justify-content: center;
 padding: 20px;
 z-index: 100;
+animation: modalOverlayIn 0.22s var(--ease);
+}
+
+@keyframes modalOverlayIn {
+from { opacity: 0; }
+to { opacity: 1; }
 }
 
 /* O desfoque de fundo fica num pseudo-elemento separado, atrás do card.
@@ -1910,6 +1969,17 @@ desfoque do overlay — garante que imagens dentro dele (ex.: print do
 comprovante) sejam rasterizadas com nitidez total. */
 isolation: isolate;
 transform: translateZ(0);
+animation: modalCardIn 0.32s var(--ease);
+}
+
+@keyframes modalCardIn {
+from { opacity: 0; transform: translateY(16px) scale(0.96) translateZ(0); }
+to { opacity: 1; transform: translateY(0) scale(1) translateZ(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+.modal-overlay,
+.modal-card { animation: none; }
 }
 
 @media (max-width: 480px) {
