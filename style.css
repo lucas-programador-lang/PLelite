@@ -1686,6 +1686,17 @@ border-color: var(--gold);
 box-shadow: 0 0 0 3px rgba(201, 162, 75, 0.14);
 }
 
+/* A listinha de opções que abre ao clicar num <select> é renderizada
+   pelo próprio sistema operacional/navegador, não pela nossa interface —
+   mas dá pra pedir a cor de fundo e do texto dela (funciona na maioria
+   dos navegadores modernos), pra não cair num branco chapado destoando
+   do resto do site escuro. */
+.toolbar select option,
+.field select option {
+background: var(--bg-void-2);
+color: var(--text-primary);
+}
+
 .data-table {
 width: 100%;
 border-collapse: collapse;
