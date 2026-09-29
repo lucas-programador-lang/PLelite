@@ -1091,8 +1091,8 @@ function renderHistoryTable() {
         <td>${escapeHtml(v.campaignTitle || "—")}</td>
         <td>${timesParticipated}x</td>
         <td>${value}</td>
-        <td>${v.startDate ? new Date(v.startDate).toLocaleDateString("pt-BR") : "—"}</td>
-        <td>${v.endDate ? new Date(v.endDate).toLocaleDateString("pt-BR") : "—"}</td>
+        <td>${v.startDate ? formatDateOnly(v.startDate) : "—"}</td>
+        <td>${v.endDate ? formatDateOnly(v.endDate) : "—"}</td>
         <td>${v.withdrawalDone
           ? `<span class="status-tag status-ativa">Sim</span>`
           : `<button class="btn-mini" data-action="toggle-withdrawal" data-id="${v.id}" data-uid="${v.userId || ""}">Marcar saque</button>`}</td>
@@ -1261,11 +1261,22 @@ function formatCurrency(value) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
+// Formata uma data no formato "AAAA-MM-DD" (do <input type="date">) sem
+// passar por conversão de fuso horário. Usar `new Date("AAAA-MM-DD")`
+// interpreta a data como meia-noite UTC — no fuso do Brasil isso podia
+// fazer o dia cadastrado pelo admin aparecer um dia antes pro usuário.
+function formatDateOnly(dateStr, short) {
+  if (!dateStr) return "";
+  const parts = String(dateStr).split("-");
+  if (parts.length !== 3) return dateStr;
+  const [y, m, d] = parts;
+  return short ? `${d}/${m}` : `${d}/${m}/${y}`;
+}
+
 function formatDateRange(start, end) {
   if (!start && !end) return "—";
-  const opts = { day: "2-digit", month: "2-digit" };
-  const s = start ? new Date(start).toLocaleDateString("pt-BR", opts) : "?";
-  const e = end ? new Date(end).toLocaleDateString("pt-BR", opts) : "?";
+  const s = start ? formatDateOnly(start, true) : "?";
+  const e = end ? formatDateOnly(end, true) : "?";
   return `${s} — ${e}`;
 }
 
