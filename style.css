@@ -364,8 +364,52 @@ border-color: var(--gold);
 box-shadow: 0 0 0 3px rgba(201, 162, 75, 0.14);
 }
 
+/* Selects dentro de formulários (status, tipo de notificação etc.) —
+   antes usavam o visual padrão do navegador, destoando do resto. */
+.field select {
+background: rgba(255, 255, 255, 0.02);
+border: 1px solid rgba(201, 162, 75, 0.18);
+border-radius: var(--radius-md);
+padding: 12px 34px 12px 14px;
+color: var(--text-primary);
+font-size: 14.5px;
+outline: none;
+cursor: pointer;
+appearance: none;
+-webkit-appearance: none;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23c9a24b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+background-repeat: no-repeat;
+background-position: right 14px center;
+transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background-color 0.2s var(--ease);
+}
+
+.field select:hover { border-color: rgba(201, 162, 75, 0.3); }
+
+.field select:focus {
+border-color: var(--gold);
+box-shadow: 0 0 0 3px rgba(201, 162, 75, 0.14);
+}
+
+.field select[multiple] {
+appearance: auto;
+-webkit-appearance: auto;
+background-image: none;
+padding: 8px;
+}
+
 .field input:invalid:not(:placeholder-shown) {
 border-color: rgba(224, 101, 75, 0.6);
+}
+
+/* Os campos já têm um anel próprio no foco (acima) — tira o contorno
+   genérico global pra não dobrar o efeito. */
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible,
+.form-grid textarea:focus-visible,
+.toolbar input:focus-visible,
+.toolbar select:focus-visible {
+outline: none;
 }
 
 .field-with-action {
@@ -541,11 +585,11 @@ font-weight: 600;
 padding: 8px 16px;
 border-radius: 999px;
 cursor: pointer;
-transition: border-color 0.2s var(--ease), color 0.2s var(--ease), background-color 0.2s var(--ease);
+transition: border-color 0.2s var(--ease), color 0.2s var(--ease), background-color 0.2s var(--ease), transform 0.12s var(--ease);
 }
 
 .btn-ghost:hover { border-color: var(--gold); color: var(--gold-bright); background: rgba(201, 162, 75, 0.06); }
-.btn-ghost:active { background: rgba(201, 162, 75, 0.1); }
+.btn-ghost:active { transform: scale(0.96); background: rgba(201, 162, 75, 0.1); }
 
 .app-header-left {
 display: flex;
@@ -1057,6 +1101,16 @@ padding: 22px 20px 20px;
 overflow: hidden;
 box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
 transition: border-color 0.22s var(--ease), transform 0.22s var(--ease), box-shadow 0.22s var(--ease);
+animation: panelBlockIn 0.45s var(--ease) backwards;
+}
+
+.metrics-grid > .metric-card:nth-child(1) { animation-delay: 0.02s; }
+.metrics-grid > .metric-card:nth-child(2) { animation-delay: 0.06s; }
+.metrics-grid > .metric-card:nth-child(3) { animation-delay: 0.1s; }
+.metrics-grid > .metric-card:nth-child(4) { animation-delay: 0.14s; }
+
+@media (prefers-reduced-motion: reduce) {
+.metric-card { animation: none; }
 }
 
 .metric-card::before {
@@ -1486,6 +1540,16 @@ padding: 26px 24px 24px;
 margin-bottom: 24px;
 box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 overflow: hidden;
+animation: panelBlockIn 0.45s var(--ease) backwards;
+}
+
+@keyframes panelBlockIn {
+from { opacity: 0; transform: translateY(10px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+.panel-block { animation: none; }
 }
 
 .panel-block::before {
@@ -1549,11 +1613,24 @@ box-shadow: 0 0 0 3px rgba(201, 162, 75, 0.12);
 background: rgba(255, 255, 255, 0.025);
 border: 1px solid rgba(201, 162, 75, 0.18);
 border-radius: var(--radius-md);
-padding: 11px 14px;
+padding: 11px 34px 11px 14px;
 color: var(--text-primary);
 font-size: 13.5px;
 outline: none;
 cursor: pointer;
+appearance: none;
+-webkit-appearance: none;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23c9a24b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+background-repeat: no-repeat;
+background-position: right 14px center;
+transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.toolbar select:hover { border-color: rgba(201, 162, 75, 0.3); }
+
+.toolbar select:focus {
+border-color: var(--gold);
+box-shadow: 0 0 0 3px rgba(201, 162, 75, 0.14);
 }
 
 .data-table {
@@ -1664,10 +1741,11 @@ font-weight: 600;
 padding: 6px 11px;
 border-radius: 7px;
 cursor: pointer;
-transition: border-color 0.16s var(--ease), color 0.16s var(--ease), background 0.16s var(--ease);
+transition: border-color 0.16s var(--ease), color 0.16s var(--ease), background 0.16s var(--ease), transform 0.12s var(--ease);
 }
 
 .btn-mini:hover { border-color: var(--gold); color: var(--gold-bright); background: rgba(201, 162, 75, 0.06); }
+.btn-mini:active { transform: scale(0.96); }
 .btn-mini:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 .btn-mini.danger { color: #f2b7a8; border-color: rgba(224, 101, 75, 0.3); }
 .btn-mini.danger:hover { border-color: var(--danger); background: rgba(224, 101, 75, 0.08); }
