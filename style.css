@@ -3147,3 +3147,30 @@ a.notif-bell { text-decoration: none; }
   /* Texto longo só no desktop (ex.: "Depósito/Devolução" vira "Depósito") */
   .sidebar-link .only-desktop { display: none; }
 }
+
+
+/* ===================================================================
+   Barra flutuante: mais espaço entre os itens
+=================================================================== */
+@media (max-width: 900px) {
+  .sidebar,
+  .sidebar.is-open { padding: 8px 10px; border-radius: 28px; }
+
+  .sidebar-links { gap: 8px; }
+
+  .sidebar-link {
+    flex: 1 0 78px;
+    min-width: 78px;
+    min-height: 62px;
+    gap: 7px;
+    padding: 10px 8px 9px;
+    font-size: 11px;
+  }
+
+  .sidebar-link .icon { width: 23px; height: 23px; }
+}
+
+@media (max-width: 360px) {
+  .sidebar-link { flex: 1 0 70px; min-width: 70px; font-size: 10px; }
+  .sidebar-links { gap: 6px; }
+}
