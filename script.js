@@ -418,7 +418,7 @@ function renderRaffleInfo() {
     : "Ninguém patrocinado ainda.";
 
   const participantsList = entries.length
-    ? entries.map((u) => escapeHtml(u.name || u.email || "—")).join(", ")
+    ? entries.map((u) => escapeHtml(u.name || "—")).join(", ")
     : "Ninguém participando do sorteio ainda.";
 
   const joinButton = alreadyEntered
@@ -468,8 +468,9 @@ function renderRaffleInfo() {
       joinBtn.disabled = true;
       try {
         await set(ref(db, `raffleEntries/${currentUser.uid}`), {
+          // Sem e-mail aqui: raffleEntries é legível por todos os usuários
+          // ativos, então só guardamos o nome e a data de entrada.
           name: currentUserName,
-          email: currentUser.email,
           joinedAt: Date.now()
         });
         // Não precisa recarregar manualmente — o listener onValue de
