@@ -52,11 +52,19 @@
       </button>
     </div>
     <div class="app-user">
-      <button type="button" class="notif-bell" id="notifBell" aria-label="Notificações">
-        <svg class="icon"><use href="#icon-bell"></use></svg>
-        <span class="notif-badge is-hidden" id="notifBadge">0</span>
-      </button>
-    </div>
+  <a class="notif-bell header-mobile-only" aria-label="Suporte (WhatsApp)" target="_blank" rel="noopener"
+     href="https://wa.me/5568999503477?text=vim%20pelo%20o%20site%20tenho%20interesse%20em%20saber%20mais%20informa%C3%A7%C3%B5es%20sobre%20a%20plataforma">
+    <svg class="icon icon--brand"><use href="#icon-whatsapp"></use></svg>
+  </a>
+  <button type="button" class="notif-bell header-mobile-only" aria-label="Sair"
+          onclick="document.getElementById('logoutBtn').click()">
+    <svg class="icon"><use href="#icon-logout"></use></svg>
+  </button>
+  <button type="button" class="notif-bell" id="notifBell" aria-label="Notificações">
+    <svg class="icon"><use href="#icon-bell"></use></svg>
+    <span class="notif-badge is-hidden" id="notifBadge">0</span>
+  </button>
+</div>
   </header>
 
   <div class="notif-panel is-hidden" id="notifPanel">
@@ -85,7 +93,7 @@
         <button type="button" class="sidebar-link" data-view="patrocinios"><svg class="icon"><use href="#icon-coins"></use></svg><span>Patrocínios</span></button>
         <button type="button" class="sidebar-link" data-view="andamentos"><svg class="icon"><use href="#icon-chart"></use></svg><span>Andamentos</span></button>
         <button type="button" class="sidebar-link" data-view="sorteios"><svg class="icon"><use href="#icon-gift"></use></svg><span>Sorteios</span></button>
-        <button type="button" class="sidebar-link" data-view="deposito"><svg class="icon"><use href="#icon-exchange"></use></svg><span>Depósito/Devolução</span></button>
+       <button type="button" class="sidebar-link" data-view="deposito"><svg class="icon"><use href="#icon-exchange"></use></svg><span>Depósito<span class="only-desktop">/Devolução</span></span></button>
         <button type="button" class="sidebar-link" data-view="minha-conta"><svg class="icon"><use href="#icon-user"></use></svg><span>Minha Conta</span></button>
       </div>
 
@@ -327,5 +335,11 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script type="module" src="firebase-config.js"></script>
 <script type="module" src="script.js"></script>
+<script>
+document.addEventListener('click', function (e) {
+  var l = e.target.closest('.sidebar-link');
+  if (l) l.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+});
+</script>
 </body>
 </html>
