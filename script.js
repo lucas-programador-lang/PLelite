@@ -77,7 +77,7 @@ function buildGalleryHtml(galleryId, images, altText) {
     : "";
 
   return `
-    <div class="card-gallery" data-gallery-id="${galleryId}" data-index="0">
+    <div class="card-gallery" data-gallery-id="${escapeHtml(galleryId)}" data-index="0">
       <img class="card-gallery-img" src="${escapeHtml(images[0])}" alt="${escapeHtml(altText || "")}" loading="lazy">
       ${arrows}
       ${dots}
@@ -288,9 +288,11 @@ function renderMetrics() {
 
   // Total pago em patrocínios: soma do orçamento das campanhas já finalizadas
   // (com resultado registrado, 🟢 ou 🔴) — dinheiro que já foi de fato pago.
+  // Number() garante soma numérica mesmo se algum orçamento tiver sido
+  // salvo como texto (ex.: "100"), evitando concatenar em vez de somar.
   const totalPago = campaigns
     .filter((c) => c.result)
-    .reduce((sum, c) => sum + (c.budget || 0), 0);
+    .reduce((sum, c) => sum + (Number(c.budget) || 0), 0);
 
   // Usuários participantes: contagem de pessoas distintas presentes em
   // "participants" de qualquer campanha (dado real, não estimado).
@@ -300,7 +302,7 @@ function renderMetrics() {
   });
 
   metricRewards.textContent = formatCurrency(totalPago);
-  metricBonusFund.textContent = formatCurrency(metricsCache.bonusFund || 0);
+  metricBonusFund.textContent = formatCurrency(Number(metricsCache.bonusFund) || 0);
   metricActiveUsers.textContent = participantUids.size;
 }
 
@@ -351,9 +353,12 @@ function buildCampaignCard(c) {
   const statusClass = STATUS_CLASSES[c.status] || "status-ativa";
   const statusLabel = STATUS_LABELS[c.status] || c.status;
 
-  const whatsappHref = c.whatsappNumber
-    ? `https://wa.me/${c.whatsappNumber}?text=${encodeURIComponent(c.whatsappMessage || "Tenho interesse nesta campanha")}`
-    : c.redirectLink || "#";
+  // Só aceita http/https e deixa só dígitos no número do WhatsApp —
+  // evita links "javascript:" ou valores estranhos vindos do banco.
+  const whatsappDigits = c.whatsappNumber ? String(c.whatsappNumber).replace(/\D/g, "") : "";
+  const whatsappHref = whatsappDigits
+    ? `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(c.whatsappMessage || "Tenho interesse nesta campanha")}`
+    : safeUrl(c.redirectLink);
 
   const images = c.images || [];
 
@@ -378,13 +383,13 @@ function buildCampaignCard(c) {
     </div>
     <div class="campaign-meta">
       <span>${filled}/${max} vagas</span>
-      <span>${formatDateRange(c.startDate, c.endDate)}</span>
+      <span>${escapeHtml(formatDateRange(c.startDate, c.endDate))}</span>
     </div>
 
     <div class="campaign-actions">
-      <a class="btn-whatsapp" href="${whatsappHref}" target="_blank" rel="noopener">Participar via WhatsApp</a>
+      <a class="btn-whatsapp" href="${escapeHtml(whatsappHref)}" target="_blank" rel="noopener">Participar via WhatsApp</a>
     </div>
-    ${isActive ? `<button type="button" class="btn-mini btn-block" data-action="send-proof" data-id="${c.id}" data-title="${escapeHtml(c.title || "")}">Enviar comprovante</button>` : ""}
+    ${isActive ? `<button type="button" class="btn-mini btn-block" data-action="send-proof" data-id="${escapeHtml(c.id)}" data-title="${escapeHtml(c.title || "")}">Enviar comprovante</button>` : ""}
   `;
 
   return card;
@@ -425,11 +430,11 @@ function renderRaffleInfo() {
   raffleInfoEl.innerHTML = `
     <div class="metric-card">
       <span class="metric-label">VALOR ARRECADADO</span>
-      <span class="metric-value">${formatCurrency(raffle.fund || 0)}</span>
+      <span class="metric-value">${formatCurrency(Number(raffle.fund) || 0)}</span>
     </div>
     <div class="metric-card">
       <span class="metric-label">DATA DO SORTEIO</span>
-      <span class="metric-value" style="font-size:19px;">${raffle.date ? formatDateOnly(raffle.date) : "A definir"}</span>
+      <span class="metric-value" style="font-size:19px;">${raffle.date ? escapeHtml(formatDateOnly(raffle.date)) : "A definir"}</span>
     </div>
     <div class="metric-card">
       <span class="metric-label">RESULTADO</span>
@@ -524,7 +529,7 @@ function renderMyHistory(validations) {
           : (HISTORY_STATUS_LABELS[v.status] || HISTORY_STATUS_LABELS.pendente)}
       </div>
       <div class="campaign-meta">
-        <span>${v.startDate ? formatDateOnly(v.startDate) : "—"} — ${v.endDate ? formatDateOnly(v.endDate) : "—"}</span>
+        <span>${escapeHtml(v.startDate ? formatDateOnly(v.startDate) : "—")} — ${escapeHtml(v.endDate ? formatDateOnly(v.endDate) : "—")}</span>
         <span>${v.withdrawalDone ? "Saque feito" : "Saque pendente"}</span>
       </div>
     </div>
@@ -571,11 +576,11 @@ function buildPostCard(p) {
     <p class="campaign-desc">${escapeHtml(p.description || "")}</p>
 
     <div class="campaign-meta">
-      <span>${date}</span>
+      <span>${escapeHtml(date)}</span>
     </div>
 
     <div class="campaign-actions">
-      ${p.redirectLink ? `<a class="btn-whatsapp" href="${escapeHtml(p.redirectLink)}" target="_blank" rel="noopener">Ver plataforma</a>` : ""}
+      ${p.redirectLink ? `<a class="btn-whatsapp" href="${escapeHtml(safeUrl(p.redirectLink))}" target="_blank" rel="noopener">Ver plataforma</a>` : ""}
       <a class="btn-whatsapp" href="${GENERIC_WHATSAPP_URL}" target="_blank" rel="noopener">Chamar no WhatsApp</a>
     </div>
   `;
@@ -628,35 +633,40 @@ proofForm.addEventListener("submit", async (e) => {
     const campaignTitleValue = proofCampaignTitle.textContent;
     const startDateValue = document.getElementById("proofStart").value;
     const endDateValue = document.getElementById("proofEnd").value;
+    const submittedAt = Date.now();
 
-    await set(newRef, {
-      userId: currentUser.uid,
-      userName: currentUserName,
-      campaignId: proofCampaignId,
-      campaignTitle: campaignTitleValue,
-      startDate: startDateValue,
-      endDate: endDateValue,
-      notes: document.getElementById("proofNotes").value.trim(),
-      imageBase64,
-      status: "pendente",
-      submittedAt: Date.now()
-    });
-
-    // Cópia mínima no próprio perfil do usuário — permite que ele veja seu
-    // histórico sem precisar de acesso de leitura ao node /validations
-    // inteiro (que é reservado ao admin nas Rules). O listener onValue de
-    // myValidations já pega essa escrita sozinho.
-    await set(ref(db, `users/${currentUser.uid}/myValidations/${newRef.key}`), {
-      campaignTitle: campaignTitleValue,
-      startDate: startDateValue,
-      endDate: endDateValue,
-      status: "pendente",
-      submittedAt: Date.now()
+    // Grava o comprovante (para o admin) e a cópia mínima no perfil do
+    // usuário (para o histórico dele) numa única operação atômica: ou
+    // grava os dois, ou nenhum. Assim, se algo falhar no meio, o usuário
+    // não fica com um comprovante "fantasma" enviado e mensagem de erro
+    // na tela (o que levava a reenvios duplicados).
+    // O listener onValue de myValidations pega essa escrita sozinho.
+    await update(ref(db), {
+      [`validations/${newRef.key}`]: {
+        userId: currentUser.uid,
+        userName: currentUserName,
+        campaignId: proofCampaignId,
+        campaignTitle: campaignTitleValue,
+        startDate: startDateValue,
+        endDate: endDateValue,
+        notes: document.getElementById("proofNotes").value.trim(),
+        imageBase64,
+        status: "pendente",
+        submittedAt
+      },
+      [`users/${currentUser.uid}/myValidations/${newRef.key}`]: {
+        campaignTitle: campaignTitleValue,
+        startDate: startDateValue,
+        endDate: endDateValue,
+        status: "pendente",
+        submittedAt
+      }
     });
 
     proofModal.classList.add("is-hidden");
     showToast("Comprovante enviado! Aguarde a validação do administrador.", "success");
   } catch (err) {
+    console.error("Erro ao enviar comprovante:", err);
     showToast("Não foi possível enviar o comprovante. Tente novamente.", "error");
   } finally {
     submitBtn.disabled = false;
@@ -797,6 +807,7 @@ depositoForm.addEventListener("submit", async (e) => {
 
     escutarConfirmacaoPix(data.identifier);
   } catch (err) {
+    console.error("Erro ao gerar o Pix:", err);
     showToast("Não foi possível gerar o Pix. Tente novamente.", "error");
   } finally {
     depositoSubmitBtn.disabled = false;
@@ -860,7 +871,8 @@ const NOTIF_TYPE_LABELS = {
 notifBell.addEventListener("click", () => {
   const willOpen = notifPanel.classList.contains("is-hidden");
   notifPanel.classList.toggle("is-hidden");
-  if (willOpen) markAllAsRead();
+  // .catch evita um erro "solto" no console se as Rules negarem a escrita.
+  if (willOpen) markAllAsRead().catch((err) => console.error("Erro ao marcar avisos como lidos:", err));
 });
 
 document.addEventListener("click", (e) => {
@@ -891,7 +903,7 @@ function renderNotifications(all) {
       <div class="notif-item ${isUnread ? "is-unread" : ""}">
         <div class="notif-item-top">
           <span class="notif-item-title">${escapeHtml(NOTIF_TYPE_LABELS[n.type] || "Aviso")}: ${escapeHtml(n.title || "")}</span>
-          <span class="notif-item-date">${date}</span>
+          <span class="notif-item-date">${escapeHtml(date)}</span>
         </div>
         <p class="notif-item-msg">${escapeHtml(n.message || "")}</p>
       </div>`;
@@ -970,8 +982,25 @@ function dismissToast(toast) {
   setTimeout(() => toast.remove(), 300);
 }
 
+/* ---------- Segurança de texto / links ---------- */
+
+// Escapa &, <, >, aspas duplas e simples. A versão antiga (div.innerHTML)
+// não escapava aspas, então um título com " quebrava atributos como
+// data-title="..." ou alt="...".
 function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str ?? "").replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
+// Só aceita links http/https. Qualquer outra coisa (ex.: "javascript:...")
+// vira "#", evitando script malicioso vindo de um campo do banco.
+function safeUrl(url) {
+  if (!url) return "#";
+  try {
+    const u = new URL(String(url), location.href);
+    return ["http:", "https:"].includes(u.protocol) ? u.href : "#";
+  } catch {
+    return "#";
+  }
 }
