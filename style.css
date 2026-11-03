@@ -3124,3 +3124,26 @@ select.btn-mini[multiple] option:checked {
 @media (max-width: 360px) {
   .sidebar-link { font-size: 9.5px; min-width: 50px; }
 }
+
+
+/* ===================================================================
+   Barra flutuante: ajustes finos (7 itens + Sair/Suporte no header)
+=================================================================== */
+
+/* Botões que só aparecem no header do celular (no desktop o Sair e o
+   Suporte continuam na sidebar). */
+.header-mobile-only { display: none; }
+
+a.notif-bell { text-decoration: none; }
+
+@media (max-width: 900px) {
+  .header-mobile-only { display: flex; }
+  .app-user { gap: 10px; }
+
+  /* Com 7 itens a barra rola pro lado: o 5º item aparece cortado de
+     propósito, indicando que dá pra arrastar. */
+  .sidebar-link { flex: 1 0 66px; min-width: 66px; }
+
+  /* Texto longo só no desktop (ex.: "Depósito/Devolução" vira "Depósito") */
+  .sidebar-link .only-desktop { display: none; }
+}
