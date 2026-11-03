@@ -2990,3 +2990,137 @@ select.btn-mini[multiple] option:checked {
   background: rgba(212, 175, 90, 0.16);
   border-color: rgba(212, 175, 90, 0.36);
 }
+
+
+/* ===================================================================
+   MENU FLUTUANTE NO CELULAR (barra inferior em "pílula")
+   Até 900px a sidebar deixa de ser gaveta lateral e vira uma barra
+   flutuante de vidro escuro, fixa embaixo, com ícone + nome em cada item.
+=================================================================== */
+@media (max-width: 900px) {
+  /* Some o que só fazia sentido na gaveta */
+  .sidebar-toggle,
+  .sidebar-overlay,
+  .sidebar-brand,
+  .sidebar-support,
+  .sidebar-footer { display: none !important; }
+
+  .sidebar,
+  .sidebar.is-open {
+    position: fixed;
+    top: auto;
+    left: 50%;
+    right: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: min(calc(100% - 24px), 560px);
+    height: auto;
+    padding: 6px;
+    gap: 0;
+    transform: translateX(-50%);
+    transition: none;
+    z-index: 50;
+    overflow: hidden;
+    border: 1px solid rgba(212, 175, 90, 0.3);
+    border-radius: 26px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015)),
+      rgba(10, 9, 13, 0.78);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+    box-shadow:
+      0 18px 44px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .sidebar-links {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 2px;
+    padding: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .sidebar-links::-webkit-scrollbar { display: none; }
+
+  .sidebar-link {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 58px;
+    min-height: 58px;
+    width: auto;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    padding: 9px 4px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    text-align: center;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    transform: none;
+  }
+
+  .sidebar-link:hover { transform: none; background: rgba(212, 175, 90, 0.06); }
+
+  .sidebar-link .icon { width: 22px; height: 22px; }
+
+  /* Indicador de item ativo: filete dourado no topo + brilho no ícone */
+  .sidebar-link::before {
+    left: 50%;
+    top: 0;
+    width: 24px;
+    height: 0;
+    transform: translateX(-50%);
+    border-radius: 0 0 4px 4px;
+  }
+
+  .sidebar-link.is-active {
+    color: var(--gold-bright);
+    background: radial-gradient(ellipse 70% 80% at 50% 25%, rgba(212, 175, 90, 0.2), transparent 80%);
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .sidebar-link.is-active::before { height: 2px; }
+
+  .sidebar-link.is-active .icon {
+    filter: drop-shadow(0 0 8px rgba(246, 220, 155, 0.55));
+  }
+
+  /* Selo de contagem vira uma bolinha sobre o ícone */
+  .sidebar-link .link-badge {
+    position: absolute;
+    top: 5px;
+    left: calc(50% + 6px);
+    margin: 0;
+    padding: 0 5px;
+    font-size: 8.5px;
+    line-height: 14px;
+  }
+
+  /* Conteúdo e botões flutuantes não ficam escondidos atrás da barra */
+  .app-main { padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+
+  .btn-flutuante-apk {
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 480px) {
+  .btn-flutuante-apk {
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+  .toast-container {
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 360px) {
+  .sidebar-link { font-size: 9.5px; min-width: 50px; }
+}
