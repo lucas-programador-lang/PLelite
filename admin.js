@@ -195,6 +195,7 @@ function attachRealtimeListeners() {
   onValue(ref(db, "users"), (snap) => {
     usersCache = snap.exists() ? snap.val() : {};
     renderUsersTable();
+    renderRaffleAdmin();
     populateNotifTargets();
     populateVisibilityOptions();
     renderOverview();
@@ -1439,6 +1440,8 @@ function renderRaffleAdmin() {
     raffleFormPrefilled = true;
   }
 
+  renderEligibleTable();
+
   const body = document.getElementById("raffleTableBody");
   const list = Object.entries(raffleEntriesCache);
 
@@ -1450,7 +1453,7 @@ function renderRaffleAdmin() {
   body.innerHTML = list.map(([id, u]) => `
     <tr>
       <td>${escapeHtml(u.name || "—")}</td>
-      <td>${escapeHtml(u.email || "—")}</td>
+      <td>${escapeHtml(u.email || (usersCache[id] && usersCache[id].email) || "—")}</td>
       <td><button class="btn-mini danger" data-action="remove-entry" data-id="${id}">Remover</button></td>
     </tr>
   `).join("");
@@ -1458,6 +1461,73 @@ function renderRaffleAdmin() {
   body.querySelectorAll("button[data-action='remove-entry']").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await remove(ref(db, `raffleEntries/${btn.dataset.id}`));
+    });
+  });
+}
+
+/* Usuários elegíveis (têm referredBy) — o admin pode qualificar direto no sorteio
+ * (grava /raffleEntries/{uid}) ou tirar a elegibilidade. */
+function renderEligibleTable() {
+  const body = document.getElementById("eligibleTableBody");
+  if (!body) return;
+  const eligible = Object.entries(usersCache).filter(([, u]) => u && u.referredBy);
+
+  if (eligible.length === 0) {
+    body.innerHTML = `<tr><td colspan="4">Nenhum usuário elegível ainda. Torne usuários elegíveis na aba Usuários.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = eligible.map(([uid, u]) => {
+    const qualified = !!raffleEntriesCache[uid];
+    return `
+      <tr>
+        <td>${escapeHtml(u.name || "—")}</td>
+        <td>${escapeHtml(u.email || "—")}</td>
+        <td>${qualified
+          ? `<span class="status-tag status-ativa">Qualificado</span>`
+          : `<span class="status-tag status-andamento">Aguardando participar</span>`}</td>
+        <td>
+          <div class="row-actions">
+            ${qualified
+              ? `<button class="btn-mini danger" data-action="unqualify" data-uid="${uid}">Remover do sorteio</button>`
+              : `<button class="btn-mini success" data-action="qualify" data-uid="${uid}">Qualificar</button>`}
+            <button class="btn-mini" data-action="uneligible" data-uid="${uid}">Tirar elegível</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join("");
+
+  body.querySelectorAll("button[data-action]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const uid = btn.dataset.uid;
+      const u = usersCache[uid] || {};
+      const label = u.name || u.email || uid;
+      btn.disabled = true;
+      try {
+        if (btn.dataset.action === "qualify") {
+          await set(ref(db, `raffleEntries/${uid}`), {
+            name: u.name || u.email || "—",
+            joinedAt: Date.now(),
+            addedByAdmin: true
+          });
+          logAction(`Qualificou ${label} no sorteio`);
+          showToast(`${label} foi qualificado no sorteio.`, "success");
+        } else if (btn.dataset.action === "unqualify") {
+          await remove(ref(db, `raffleEntries/${uid}`));
+          logAction(`Removeu ${label} do sorteio`);
+          showToast(`${label} foi removido do sorteio.`, "success");
+        } else if (btn.dataset.action === "uneligible") {
+          const updates = { [`users/${uid}/referredBy`]: null };
+          if (raffleEntriesCache[uid]) updates[`raffleEntries/${uid}`] = null;
+          await update(ref(db), updates);
+          logAction(`Tirou a elegibilidade de ${label}`);
+          showToast(`${label} não está mais elegível.`, "success");
+        }
+      } catch (err) {
+        console.error("Erro na elegibilidade do sorteio:", err);
+        showToast("Não foi possível concluir a ação.", "error");
+        btn.disabled = false;
+      }
     });
   });
 }
