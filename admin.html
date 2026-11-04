@@ -21,6 +21,7 @@
     <symbol id="icon-megaphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4a1 1 0 0 0 1 1h2l7 4V5L6 9H4a1 1 0 0 0-1 1Z"/><path d="M17 8.5a4 4 0 0 1 0 7"/><path d="M20 6a7.5 7.5 0 0 1 0 12"/></symbol>
     <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.3 12.3l2.4 2.4 5-5.4"/></symbol>
     <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.5l3.6 2"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="4"/><path d="M10.5 9.5v5l4.5-2.5-4.5-2.5Z" fill="currentColor"/></symbol>
     <symbol id="icon-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="4" rx="0.5"/><path d="M5 13h14v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7Z"/><path d="M12 9v12"/><path d="M12 9C9 9 8 7.5 8 6.2 8 5 9 4 10.2 4 11.8 4 12 6.5 12 9Z"/><path d="M12 9c3 0 4-1.5 4-2.8C16 5 15 4 13.8 4 12.2 4 12 6.5 12 9Z"/></symbol>
     <symbol id="icon-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10.5a6 6 0 0 1 12 0c0 4.2 1.3 5.5 1.3 5.5H4.7S6 14.7 6 10.5Z"/><path d="M10 19a2 2 0 0 0 4 0"/></symbol>
     <symbol id="icon-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12"/><path d="M8 12h12"/><path d="M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
@@ -67,6 +68,7 @@
       <button type="button" class="sidebar-link admin-tab" data-tab="users"><svg class="icon"><use href="#icon-users"></use></svg><span>Usuários</span></button>
       <button type="button" class="sidebar-link admin-tab" data-tab="campaigns"><svg class="icon"><use href="#icon-megaphone"></use></svg><span>Campanhas</span></button>
       <button type="button" class="sidebar-link admin-tab" data-tab="posts"><svg class="icon"><use href="#icon-megaphone"></use></svg><span>Publicações</span></button>
+      <button type="button" class="sidebar-link admin-tab" data-tab="tutorials"><svg class="icon"><use href="#icon-play"></use></svg><span>Tutoriais</span></button>
       <button type="button" class="sidebar-link admin-tab" data-tab="validations"><svg class="icon"><use href="#icon-check-circle"></use></svg><span>Validações</span></button>
       <button type="button" class="sidebar-link admin-tab" data-tab="history"><svg class="icon"><use href="#icon-clock"></use></svg><span>Histórico</span></button>
       <button type="button" class="sidebar-link admin-tab" data-tab="raffle"><svg class="icon"><use href="#icon-gift"></use></svg><span>Bonificação</span></button>
@@ -247,6 +249,39 @@
                 <tr><td colspan="5"><span class="skeleton-td w-90"></span></td></tr>
                 <tr><td colspan="5"><span class="skeleton-td w-40"></span></td></tr>
               </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TUTORIAIS (YOUTUBE) -->
+      <section class="admin-section" id="tab-tutorials">
+        <div class="panel-block">
+          <h3 id="tutorialFormTitle">Novo tutorial</h3>
+          <form class="form-grid" id="tutorialForm">
+            <div class="field"><label for="tTitle">Título</label><input type="text" id="tTitle" required></div>
+            <div class="field"><label for="tLink">Link do YouTube</label><input type="text" id="tLink" placeholder="https://www.youtube.com/watch?v=..." required></div>
+            <div class="field field-full"><label for="tDesc">Descrição (opcional)</label><textarea id="tDesc"></textarea></div>
+            <div class="field">
+              <label for="tStatus">Status</label>
+              <select id="tStatus">
+                <option value="publicado">Publicado</option>
+                <option value="oculto">Oculto (não aparece pro usuário)</option>
+              </select>
+            </div>
+            <div class="field field-full">
+              <button type="submit" class="btn-primary btn-inline" id="tutorialSubmit"><span class="btn-label">Publicar tutorial</span></button>
+              <button type="button" class="btn-mini is-hidden" id="tutorialCancel" style="margin-left:8px;">Cancelar edição</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-block">
+          <h3>Tutoriais cadastrados</h3>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Título</th><th>Vídeo</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
+              <tbody id="tutorialsTableBody"><tr><td colspan="5"><span class="skeleton-td w-90"></span></td></tr></tbody>
             </table>
           </div>
         </div>
