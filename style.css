@@ -3387,3 +3387,55 @@ body::after {
     filter: drop-shadow(0 0 9px rgba(251, 227, 166, 0.6));
   }
 }
+
+
+/* ===================================================================
+   TEMA 4 — FUNDO LIMPO (substitui a aurora, o grão e a vinheta)
+   Padrão: "preto elegante". Para testar outro, coloque uma classe no
+   <html>:   <html lang="pt-BR" class="bg-grafite">
+   Opções:   (sem classe) = preto elegante · bg-grafite · bg-dourado
+=================================================================== */
+
+/* Desliga os efeitos anteriores */
+html::before { content: none; animation: none; }
+body::before { background: none; animation: none; }
+
+/* Base: preto elegante com um degradê quase imperceptível */
+html {
+  background-color: #080708;
+  background-image: linear-gradient(180deg, #0d0c0e 0%, #080708 55%, #060506 100%);
+}
+
+/* Único detalhe: uma luz dourada bem suave no topo, sem grão */
+body::after {
+  background-image: radial-gradient(ellipse 70% 42% at 50% -10%, rgba(220, 184, 98, 0.10), transparent 72%);
+  background-size: auto;
+  background-repeat: no-repeat;
+}
+
+/* ---------- Opção B: grafite (neutro, um pouco mais claro) ---------- */
+html.bg-grafite {
+  background-color: #0f0e12;
+  background-image: linear-gradient(180deg, #19171c 0%, #121115 55%, #0d0c0f 100%);
+}
+html.bg-grafite body::after {
+  background-image: radial-gradient(ellipse 70% 42% at 50% -10%, rgba(255, 255, 255, 0.055), transparent 72%);
+}
+
+/* ---------- Opção C: dourado quente (bronze escuro) ---------- */
+html.bg-dourado {
+  background-color: #0b0805;
+  background-image: linear-gradient(160deg, #1b140a 0%, #100b06 55%, #090604 100%);
+}
+html.bg-dourado body::after {
+  background-image:
+    radial-gradient(ellipse 70% 42% at 50% -10%, rgba(224, 149, 58, 0.15), transparent 72%),
+    radial-gradient(ellipse 60% 30% at 100% 100%, rgba(220, 184, 98, 0.08), transparent 72%);
+}
+
+/* O painel de marca do login volta a ser sólido e discreto */
+.brand-panel {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 40%, rgba(220, 184, 98, 0.10), transparent 70%),
+    linear-gradient(180deg, rgba(18, 15, 21, 0.85), rgba(8, 7, 9, 0.92));
+}
