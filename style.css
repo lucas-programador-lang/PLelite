@@ -3174,3 +3174,19 @@ a.notif-bell { text-decoration: none; }
   .sidebar-link { flex: 1 0 70px; min-width: 70px; font-size: 10px; }
   .sidebar-links { gap: 6px; }
 }
+
+
+/* ===================================================================
+   Botão "Baixe o App": some dentro do app instalado e sobe acima da
+   barra flutuante no celular
+=================================================================== */
+html.is-app .btn-flutuante-apk { display: none !important; }
+
+@media (max-width: 900px) {
+  .btn-flutuante-apk { bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+  .app-main { padding-bottom: calc(128px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (max-width: 480px) {
+  .toast-container { bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+}
