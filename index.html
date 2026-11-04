@@ -341,5 +341,28 @@ document.addEventListener('click', function (e) {
   if (l) l.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
 });
 </script>
+
+  <script>
+(function () {
+  var ua = navigator.userAgent || "";
+  var params = new URLSearchParams(location.search);
+  var isApp =
+    matchMedia("(display-mode: standalone)").matches ||
+    matchMedia("(display-mode: fullscreen)").matches ||
+    matchMedia("(display-mode: minimal-ui)").matches ||
+    navigator.standalone === true ||
+    (document.referrer || "").indexOf("android-app://") === 0 ||
+    (/; wv\)/.test(ua) && !/FBAN|FBAV|Instagram|TikTok|Line|MicroMessenger/i.test(ua)) ||
+    !!window.cordova ||
+    !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) ||
+    /PLEliteApp/i.test(ua) ||
+    params.get("app") === "1";
+  try {
+    if (params.get("app") === "1") localStorage.setItem("plelite_is_app", "1");
+    if (localStorage.getItem("plelite_is_app") === "1") isApp = true;
+  } catch (e) {}
+  if (isApp) document.documentElement.classList.add("is-app");
+})();
+</script>
 </body>
 </html>
