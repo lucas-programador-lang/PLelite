@@ -346,7 +346,8 @@ function renderUsersTable() {
   const entries = Object.entries(users);
 
   if (entries.length === 0) {
-    body.innerHTML = `<tr><td colspan="5">Nenhum usuário encontrado.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6">Nenhum usuário encontrado.</td></tr>`;
+    updateEligibilityBar();
     return;
   }
 
@@ -361,10 +362,11 @@ function renderUsersTable() {
 
     return `
       <tr>
+        <td><input type="checkbox" class="user-select" data-uid="${uid}" aria-label="Selecionar ${escapeHtml(u.name || u.email || uid)}" ${selectedUsers.has(uid) ? "checked" : ""}></td>
         <td>${escapeHtml(u.name || "—")}</td>
         <td>${escapeHtml(u.email || "—")}</td>
         <td>${statusTag}</td>
-        <td>${u.role === "admin" ? "Administrador" : "Usuário"}${u.referredBy ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">via link: ${escapeHtml(u.referredBy)}</div>` : ""}</td>
+        <td>${u.role === "admin" ? "Administrador" : "Usuário"}${u.referredBy ? `<div style="margin-top:4px;"><span class="status-tag status-ativa">Elegível</span> <span style="font-size:10.5px;color:var(--text-muted);">via: ${escapeHtml(u.referredBy)}</span></div>` : ""}</td>
         <td>
           <div class="row-actions">
             <button class="btn-mini" data-action="edit" data-uid="${uid}">Editar</button>
@@ -386,7 +388,70 @@ function renderUsersTable() {
   body.querySelectorAll("button[data-action]").forEach((btn) => {
     btn.addEventListener("click", () => handleUserAction(btn.dataset.action, btn.dataset.uid));
   });
+
+  body.querySelectorAll(".user-select").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) selectedUsers.add(cb.dataset.uid);
+      else selectedUsers.delete(cb.dataset.uid);
+      updateEligibilityBar();
+    });
+  });
+  updateEligibilityBar();
 }
+
+/* ---------- Elegibilidade do sorteio (seleção em lote) ----------
+ * "Elegível" = usuário com /users/{uid}/referredBy preenchido (é isso que a
+ * tela de Sorteios do usuário verifica). Estes botões preenchem ou limpam
+ * esse campo nos usuários selecionados. */
+const selectedUsers = new Set();
+
+function visibleUserIds() {
+  return [...document.querySelectorAll("#usersTableBody .user-select")].map((cb) => cb.dataset.uid);
+}
+
+function updateEligibilityBar() {
+  const n = selectedUsers.size;
+  document.getElementById("selectedUsersCount").textContent =
+    n === 1 ? "1 selecionado" : `${n} selecionados`;
+  document.getElementById("makeEligibleBtn").disabled = n === 0;
+  document.getElementById("removeEligibleBtn").disabled = n === 0;
+  const all = document.getElementById("selectAllUsers");
+  const ids = visibleUserIds();
+  all.checked = ids.length > 0 && ids.every((id) => selectedUsers.has(id));
+}
+
+document.getElementById("selectAllUsers").addEventListener("change", (e) => {
+  visibleUserIds().forEach((id) => (e.target.checked ? selectedUsers.add(id) : selectedUsers.delete(id)));
+  renderUsersTable();
+});
+
+async function setEligibility(eligible) {
+  const uids = [...selectedUsers];
+  if (uids.length === 0) return;
+  const btns = [document.getElementById("makeEligibleBtn"), document.getElementById("removeEligibleBtn")];
+  btns.forEach((b) => (b.disabled = true));
+  try {
+    const updates = {};
+    uids.forEach((uid) => {
+      updates[`users/${uid}/referredBy`] = eligible ? (usersCache[uid]?.referredBy || "admin") : null;
+    });
+    await update(ref(db), updates);
+    logAction(`${eligible ? "Tornou elegível(is)" : "Removeu a elegibilidade de"} ${uids.length} usuário(s) no sorteio`);
+    showToast(
+      eligible ? `${uids.length} usuário(s) agora estão elegíveis.` : `Elegibilidade removida de ${uids.length} usuário(s).`,
+      "success"
+    );
+    selectedUsers.clear();
+  } catch (err) {
+    console.error("Erro ao alterar elegibilidade:", err);
+    showToast("Não foi possível alterar a elegibilidade.", "error");
+  } finally {
+    renderUsersTable();
+  }
+}
+
+document.getElementById("makeEligibleBtn").addEventListener("click", () => setEligibility(true));
+document.getElementById("removeEligibleBtn").addEventListener("click", () => setEligibility(false));
 
 async function handleUserAction(action, uid) {
   if (action === "edit") {
