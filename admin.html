@@ -132,14 +132,19 @@
           <div class="toolbar">
             <input type="search" id="userSearch" placeholder="Buscar por nome ou e-mail…">
           </div>
+          <div class="toolbar" id="eligibilityBar" style="gap:8px;flex-wrap:wrap;align-items:center;">
+            <span id="selectedUsersCount" style="font-size:13px;color:var(--text-muted);">0 selecionados</span>
+            <button type="button" class="btn-mini success" id="makeEligibleBtn" disabled>Tornar elegíveis (sorteio)</button>
+            <button type="button" class="btn-mini" id="removeEligibleBtn" disabled>Remover elegibilidade</button>
+          </div>
           <div style="overflow-x:auto;">
             <table class="data-table">
               <thead>
-                <tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Nível</th><th>Ações</th></tr>
+                <tr><th style="width:36px;"><input type="checkbox" id="selectAllUsers" aria-label="Selecionar todos"></th><th>Nome</th><th>E-mail</th><th>Status</th><th>Nível</th><th>Ações</th></tr>
               </thead>
               <tbody id="usersTableBody">
-                <tr><td colspan="5"><span class="skeleton-td w-90"></span></td></tr>
-                <tr><td colspan="5"><span class="skeleton-td w-40"></span></td></tr>
+                <tr><td colspan="6"><span class="skeleton-td w-90"></span></td></tr>
+                <tr><td colspan="6"><span class="skeleton-td w-40"></span></td></tr>
               </tbody>
             </table>
           </div>
