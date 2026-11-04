@@ -1,0 +1,4 @@
+# Roteamento do navegador (History API) no Cloudflare Pages.
+# /admin já é servido pelo próprio Pages (admin.html), então só as subrotas precisam de rewrite.
+/admin/*   /admin   200
+/*         /index.html   200
