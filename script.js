@@ -33,6 +33,8 @@ const metricActiveCampaigns = document.getElementById("metricActiveCampaigns");
 const raffleInfoEl = document.getElementById("raffleInfo");
 const postsGridEl = document.getElementById("postsGrid");
 const postsCountEl = document.getElementById("postsCount");
+const tutorialsGridEl = document.getElementById("tutorialsGrid");
+const tutorialsCountEl = document.getElementById("tutorialsCount");
 
 const activeCampaignsEl = document.getElementById("activeCampaigns");
 const andamentoCampaignsEl = document.getElementById("andamentoCampaigns");
@@ -307,6 +309,14 @@ function attachRealtimeListeners() {
 
   onValue(ref(db, "posts"), (snap) => {
     renderPosts(snap.exists() ? snap.val() : {});
+  });
+
+  onValue(ref(db, "tutorials"), (snap) => {
+    renderTutorials(snap.exists() ? snap.val() : {});
+  }, (err) => {
+    console.error("Erro ao ler tutoriais:", err);
+    tutorialsCountEl.textContent = "";
+    tutorialsGridEl.innerHTML = `<p class="empty-state">Não foi possível carregar os tutoriais.</p>`;
   });
 
   onValue(ref(db, "notifications"), (snap) => {
@@ -621,6 +631,66 @@ function buildPostCard(p) {
       ${p.redirectLink ? `<a class="btn-whatsapp" href="${escapeHtml(safeUrl(p.redirectLink))}" target="_blank" rel="noopener">Ver plataforma</a>` : ""}
       <a class="btn-whatsapp" href="${GENERIC_WHATSAPP_URL}" target="_blank" rel="noopener">Chamar no WhatsApp</a>
     </div>
+  `;
+
+  return card;
+}
+
+/* ---------- Tutoriais (YouTube) ---------- */
+
+function youtubeId(url) {
+  const m = String(url || "").match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function renderTutorials(obj) {
+  const entries = Object.entries(obj)
+    .map(([id, t]) => ({ id, ...t }))
+    .filter((t) => !t.status || t.status === "publicado")
+    .sort((a, b) => (b.date || b.createdAt || 0) - (a.date || a.createdAt || 0));
+
+  tutorialsCountEl.textContent = `${entries.length} tutorial${entries.length === 1 ? "" : "is"}`;
+  tutorialsGridEl.innerHTML = "";
+
+  if (entries.length === 0) {
+    tutorialsGridEl.innerHTML = `<p class="empty-state">Nenhum tutorial por enquanto.</p>`;
+    return;
+  }
+
+  entries.forEach((t) => tutorialsGridEl.appendChild(buildTutorialCard(t)));
+}
+
+function buildTutorialCard(t) {
+  const card = document.createElement("article");
+  card.className = "campaign-card";
+
+  // Prefere o videoId salvo pelo admin; se não houver, extrai do link.
+  const vid = /^[A-Za-z0-9_-]{11}$/.test(t.videoId || "")
+    ? t.videoId
+    : youtubeId(t.link || t.url || t.youtubeLink);
+  const link = vid
+    ? `https://www.youtube.com/watch?v=${vid}`
+    : safeUrl(t.link || t.url || t.youtubeLink);
+  const thumb = vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : "";
+  const dateRaw = t.date || t.createdAt;
+  const date = dateRaw ? new Date(dateRaw).toLocaleDateString("pt-BR") : "";
+  const title = t.title || "Sem título";
+
+  card.innerHTML = `
+    <div>
+      <span class="campaign-category">TUTORIAL</span>
+      <h3 class="campaign-title">${escapeHtml(title)}</h3>
+    </div>
+
+    <a class="tutorial-thumb" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Assistir ${escapeHtml(title)} no YouTube">
+      ${thumb ? `<img src="${escapeHtml(thumb)}" alt="${escapeHtml(title)}" loading="lazy">` : ""}
+      <span class="tutorial-play"><svg class="icon"><use href="#icon-play"></use></svg></span>
+    </a>
+
+    ${t.description ? `<p class="campaign-desc">${escapeHtml(t.description)}</p>` : ""}
+    ${date ? `<div class="campaign-meta"><span>${escapeHtml(date)}</span></div>` : ""}
+
+    <a class="btn-youtube" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer"><svg class="icon"><use href="#icon-play"></use></svg> Assistir no YouTube</a>
   `;
 
   return card;
