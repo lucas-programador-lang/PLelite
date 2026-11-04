@@ -866,37 +866,71 @@ function hideProofFeedback() {
   proofFeedback.textContent = "";
 }
 
-// Redimensiona/comprime o print antes de enviar — mantém boa leitura de
-// texto (resolução um pouco maior que a das fotos de campanha/publicação,
-// já que aqui o admin precisa conseguir ler o comprovante) mas evita
-// mandar pro banco uma foto de celular crua de vários MB.
+// Prepara o print para envio mantendo a legibilidade do texto:
+// - se o arquivo já é pequeno e não passa de MAX_DIMENSION, é enviado SEM reprocessar
+//   (zero perda de qualidade);
+// - se for grande, reduz só até MAX_DIMENSION (2560px — um print de celular
+//   1080x2400 não é mais encolhido) com suavização de alta qualidade;
+// - ajusta a qualidade do JPEG até caber em MAX_BYTES, para não pesar no banco.
+const PROOF_MAX_DIMENSION = 2560;
+const PROOF_MAX_BYTES = 1500 * 1024; // ~1,5 MB por comprovante
+
+function dataUrlBytes(dataUrl) {
+  return Math.round((dataUrl.length - dataUrl.indexOf(",") - 1) * 0.75);
+}
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = reject;
     reader.onload = () => {
+      const original = reader.result;
       const img = new Image();
       img.onerror = reject;
       img.onload = () => {
-        const maxDimension = 1600;
         let { width, height } = img;
-        if (width > maxDimension || height > maxDimension) {
-          if (width >= height) {
-            height = Math.round(height * (maxDimension / width));
-            width = maxDimension;
-          } else {
-            width = Math.round(width * (maxDimension / height));
-            height = maxDimension;
-          }
+        const fitsSize = width <= PROOF_MAX_DIMENSION && height <= PROOF_MAX_DIMENSION;
+
+        // Já está bom: envia o arquivo original, sem recomprimir.
+        if (fitsSize && dataUrlBytes(original) <= PROOF_MAX_BYTES) {
+          resolve(original);
+          return;
         }
+
+        if (!fitsSize) {
+          const ratio = PROOF_MAX_DIMENSION / Math.max(width, height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        const isPng = file.type === "image/png";
-        resolve(isPng ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", 0.87));
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        // Fundo branco: evita fundo preto em PNG com transparência ao virar JPEG.
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // PNG (nítido p/ texto) se couber no limite; senão JPEG baixando a qualidade aos poucos.
+        if (file.type === "image/png") {
+          const png = canvas.toDataURL("image/png");
+          if (dataUrlBytes(png) <= PROOF_MAX_BYTES) {
+            resolve(png);
+            return;
+          }
+        }
+        let quality = 0.95;
+        let out = canvas.toDataURL("image/jpeg", quality);
+        while (dataUrlBytes(out) > PROOF_MAX_BYTES && quality > 0.7) {
+          quality -= 0.05;
+          out = canvas.toDataURL("image/jpeg", quality);
+        }
+        resolve(out);
       };
-      img.src = reader.result;
+      img.src = original;
     };
     reader.readAsDataURL(file);
   });
