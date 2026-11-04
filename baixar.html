@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="description" content="Baixe o aplicativo oficial PL Elite para Android e acompanhe campanhas, patrocínios e recompensas direto do celular.">
-<link rel="icon" type="image/png" href="assets/logo-icon.png">
+<link rel="icon" type="image/png" href="/assets/logo-icon.png">
 <title>PL ELITE — Baixar App</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
@@ -23,7 +23,7 @@
 
     <div class="brand-content">
       <h1 class="brand-logo-wrap">
-        <img class="brand-logo logo-float" src="assets/logo-full.png" alt="PL Elite">
+        <img class="brand-logo logo-float" src="/assets/logo-full.png" alt="PL Elite">
       </h1>
       <span class="brand-eyebrow">APLICATIVO OFICIAL &middot; ANDROID</span>
       <p class="brand-tagline">O dashboard da PL Elite no seu bolso. Acompanhe campanhas, valide entregas e resgate recompensas de onde você estiver.</p>
@@ -44,7 +44,7 @@
         <p>Instale o aplicativo oficial da PL Elite e leve seu dashboard pra qualquer lugar.</p>
       </div>
 
-      <a href="plelite.apk" download="PLElite.apk" class="btn-primary btn-download-main">
+      <a href="/plelite.apk" download="PLElite.apk" class="btn-primary btn-download-main">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
@@ -67,7 +67,7 @@
         </ol>
       </div>
 
-      <p class="auth-switch"><a href="index.html">&larr; Voltar para o site</a></p>
+      <p class="auth-switch"><a href="/">&larr; Voltar para o site</a></p>
     </div>
   </main>
 
@@ -78,7 +78,7 @@
   var qrTarget = document.getElementById("downloadQr");
   if (qrTarget && window.QRCode) {
     new QRCode(qrTarget, {
-      text: new URL("plelite.apk", window.location.href).href,
+      text: new URL("/plelite.apk", window.location.href).href,
       width: 152,
       height: 152,
       colorDark: "#0c0a08",
