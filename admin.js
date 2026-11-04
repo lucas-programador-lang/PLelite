@@ -32,6 +32,7 @@ let usersCache = {};
 let campaignsCache = {};
 let metricsCache = {};
 let postsCache = {};
+let tutorialsCache = {};
 let validationsCache = {};
 let raffleCache = {};
 let raffleEntriesCache = {};
@@ -41,6 +42,7 @@ let auditCache = {};
 let editingUid = null;
 let editingCampaignId = null;
 let editingPostId = null;
+let editingTutorialId = null;
 
 /* ---------- Guarda de rota (somente admin, em tempo real) ---------- */
 
@@ -145,6 +147,15 @@ function attachRealtimeListeners() {
   onValue(ref(db, "posts"), (snap) => {
     postsCache = snap.exists() ? snap.val() : {};
     renderPostsTable();
+  });
+
+  onValue(ref(db, "tutorials"), (snap) => {
+    tutorialsCache = snap.exists() ? snap.val() : {};
+    renderTutorialsTable();
+  }, (err) => {
+    console.error("Erro ao ler tutoriais:", err);
+    const body = document.getElementById("tutorialsTableBody");
+    if (body) body.innerHTML = `<tr><td colspan="5">Não foi possível carregar os tutoriais (verifique as regras do Firebase).</td></tr>`;
   });
 
   onValue(ref(db, "validations"), (snap) => {
@@ -861,6 +872,149 @@ function bindEditPostModal() {
     } finally {
       submitBtn.disabled = false;
     }
+  });
+}
+
+/* ---------- Tutoriais (YouTube) ---------- */
+
+function youtubeId(url) {
+  const m = String(url || "").match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+const tutorialForm = document.getElementById("tutorialForm");
+const tutorialCancelBtn = document.getElementById("tutorialCancel");
+
+function resetTutorialForm() {
+  editingTutorialId = null;
+  tutorialForm.reset();
+  document.getElementById("tutorialFormTitle").textContent = "Novo tutorial";
+  document.querySelector("#tutorialSubmit .btn-label").textContent = "Publicar tutorial";
+  tutorialCancelBtn.classList.add("is-hidden");
+}
+
+tutorialCancelBtn.addEventListener("click", resetTutorialForm);
+
+tutorialForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const submitBtn = document.getElementById("tutorialSubmit");
+
+  const title = document.getElementById("tTitle").value.trim();
+  const vid = youtubeId(document.getElementById("tLink").value.trim());
+
+  if (!vid) {
+    showToast("Link inválido. Cole um link do YouTube (youtube.com ou youtu.be).", "error");
+    return;
+  }
+
+  submitBtn.disabled = true;
+
+  const payload = {
+    title,
+    // Guarda sempre o link no formato padrão — vale pra links curtos, shorts e lives.
+    link: `https://www.youtube.com/watch?v=${vid}`,
+    videoId: vid,
+    description: document.getElementById("tDesc").value.trim(),
+    status: document.getElementById("tStatus").value
+  };
+
+  try {
+    if (editingTutorialId) {
+      await update(ref(db, `tutorials/${editingTutorialId}`), payload);
+      logAction(`Editou o tutorial "${title}"`);
+      showToast("Tutorial atualizado!", "success");
+    } else {
+      await set(push(ref(db, "tutorials")), { ...payload, date: Date.now() });
+      logAction(`Publicou o tutorial "${title}"`);
+      showToast("Tutorial publicado!", "success");
+    }
+    resetTutorialForm();
+  } catch (err) {
+    console.error("Erro ao salvar tutorial:", err);
+    showToast("Não foi possível salvar o tutorial. Tente novamente.", "error");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+function renderTutorialsTable() {
+  const body = document.getElementById("tutorialsTableBody");
+  const entries = Object.entries(tutorialsCache)
+    .sort((a, b) => (b[1].date || 0) - (a[1].date || 0));
+
+  if (entries.length === 0) {
+    body.innerHTML = `<tr><td colspan="5">Nenhum tutorial cadastrado ainda.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = entries.map(([id, t]) => {
+    const vid = /^[A-Za-z0-9_-]{11}$/.test(t.videoId || "") ? t.videoId : youtubeId(t.link);
+    const hidden = t.status === "oculto";
+    return `
+      <tr>
+        <td>${escapeHtml(t.title || "—")}</td>
+        <td>${vid ? `<a class="btn-mini" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;" href="https://www.youtube.com/watch?v=${vid}" target="_blank" rel="noopener noreferrer"><svg class="icon" style="width:14px;height:14px;"><use href="#icon-play"></use></svg> Abrir vídeo</a>` : "—"}</td>
+        <td>${hidden
+          ? `<span class="status-tag status-andamento">Oculto</span>`
+          : `<span class="status-tag status-ativa">Publicado</span>`}</td>
+        <td>${t.date ? new Date(t.date).toLocaleDateString("pt-BR") : "—"}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn-mini" data-action="edit-tutorial" data-id="${escapeHtml(id)}">Editar</button>
+            <button class="btn-mini" data-action="toggle-tutorial" data-id="${escapeHtml(id)}">${hidden ? "Publicar" : "Ocultar"}</button>
+            <button class="btn-mini danger" data-action="delete-tutorial" data-id="${escapeHtml(id)}">Excluir</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join("");
+
+  body.querySelectorAll("button[data-action='edit-tutorial']").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const t = tutorialsCache[btn.dataset.id];
+      if (!t) return;
+      editingTutorialId = btn.dataset.id;
+      document.getElementById("tTitle").value = t.title || "";
+      document.getElementById("tLink").value = t.link || "";
+      document.getElementById("tDesc").value = t.description || "";
+      document.getElementById("tStatus").value = t.status || "publicado";
+      document.getElementById("tutorialFormTitle").textContent = "Editar tutorial";
+      document.querySelector("#tutorialSubmit .btn-label").textContent = "Salvar alterações";
+      tutorialCancelBtn.classList.remove("is-hidden");
+      tutorialForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  body.querySelectorAll("button[data-action='toggle-tutorial']").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const t = tutorialsCache[btn.dataset.id];
+      if (!t) return;
+      const next = t.status === "oculto" ? "publicado" : "oculto";
+      try {
+        await update(ref(db, `tutorials/${btn.dataset.id}`), { status: next });
+        logAction(`${next === "oculto" ? "Ocultou" : "Publicou"} o tutorial "${t.title}"`);
+        showToast(next === "oculto" ? "Tutorial ocultado." : "Tutorial publicado.", "success");
+      } catch (err) {
+        console.error("Erro ao alterar status do tutorial:", err);
+        showToast("Não foi possível alterar o status.", "error");
+      }
+    });
+  });
+
+  body.querySelectorAll("button[data-action='delete-tutorial']").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const t = tutorialsCache[btn.dataset.id];
+      if (!t) return;
+      if (!(await showConfirm("Excluir este tutorial?"))) return;
+      try {
+        await remove(ref(db, `tutorials/${btn.dataset.id}`));
+        if (editingTutorialId === btn.dataset.id) resetTutorialForm();
+        logAction(`Excluiu o tutorial "${t.title}"`);
+        showToast("Tutorial excluído.", "success");
+      } catch (err) {
+        console.error("Erro ao excluir tutorial:", err);
+        showToast("Não foi possível excluir.", "error");
+      }
+    });
   });
 }
 
