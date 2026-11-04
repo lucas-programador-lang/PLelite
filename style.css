@@ -3190,3 +3190,52 @@ html.is-app .btn-flutuante-apk { display: none !important; }
 @media (max-width: 480px) {
   .toast-container { bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
 }
+
+
+/* ---------- Tutoriais (YouTube) ---------- */
+.tutorial-thumb {
+  position: relative;
+  display: block;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 90, 0.16);
+  background: var(--bg-void-3);
+}
+.tutorial-thumb img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s var(--ease);
+}
+.campaign-card:hover .tutorial-thumb img { transform: scale(1.035); }
+.tutorial-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 6, 8, 0.25);
+  color: #fff;
+}
+.tutorial-play .icon {
+  width: 56px;
+  height: 56px;
+  color: #ff0033;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+}
+.btn-youtube {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  background: #ff0033;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+}
+.btn-youtube:hover { filter: brightness(1.1); }
