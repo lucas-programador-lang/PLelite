@@ -553,13 +553,20 @@ function renderRaffleInfo() {
   campaigns.forEach((c) => {
     if (c.participants) Object.values(c.participants).forEach((name) => patrocinadosSet.add(name));
   });
+  // Cada pessoa vira uma "etiqueta" própria (nome grande e claro), em vez de
+  // um texto corrido separado por vírgulas.
+  const personChips = (names) =>
+    `<span class="raffle-people">${names
+      .map((n) => `<span class="raffle-person">${escapeHtml(n)}</span>`)
+      .join("")}</span>`;
+
   const patrocinadosList = patrocinadosSet.size
-    ? [...patrocinadosSet].map((n) => escapeHtml(n)).join(", ")
-    : "Ninguém patrocinado ainda.";
+    ? personChips([...patrocinadosSet])
+    : `<span class="raffle-empty">Ninguém patrocinado ainda.</span>`;
 
   const participantsList = entries.length
-    ? entries.map((u) => escapeHtml(u.name || "—")).join(", ")
-    : "Ninguém participando do sorteio ainda.";
+    ? personChips(entries.map((u) => u.name || "—"))
+    : `<span class="raffle-empty">Ninguém participando do sorteio ainda.</span>`;
 
   const joinButton = alreadyEntered
     ? `<span class="status-tag status-ativa" style="display:inline-block;margin-top:8px;">Você já está participando</span>`
@@ -585,20 +592,20 @@ function renderRaffleInfo() {
       <span class="status-tag ${isEligible ? "status-ativa" : "status-cancelada"}" style="display:inline-block;">
         ${isEligible ? "Elegível" : "Não elegível"}
       </span>
-      ${!isEligible ? `<p style="font-size:11px;color:var(--text-muted);margin:8px 0 0;">Somente quem entrou pelo link de indicação participa.</p>` : ""}
+      ${!isEligible ? `<p class="raffle-note">Somente quem entrou pelo link de indicação participa.</p>` : ""}
       ${joinButton}
     </div>
     <div class="metric-card" style="grid-column:1 / -1;">
       <span class="metric-label">QUEM PARTICIPOU DO SORTEIO</span>
-      <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${participantsList}</span>
+      <div class="raffle-body">${participantsList}</div>
     </div>
     <div class="metric-card" style="grid-column:1 / -1;">
       <span class="metric-label">QUEM FOI PATROCINADO</span>
-      <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${patrocinadosList}</span>
+      <div class="raffle-body">${patrocinadosList}</div>
     </div>
     <div class="metric-card" style="grid-column:1 / -1;">
       <span class="metric-label">REGRAS</span>
-      <span style="font-size:12.5px;color:var(--text-muted);display:block;margin-top:6px;">${raffle.rules ? escapeHtml(raffle.rules) : "A definir pelo administrador."}</span>
+      <div class="raffle-body">${raffle.rules ? escapeHtml(raffle.rules) : "A definir pelo administrador."}</div>
     </div>
   `;
 
