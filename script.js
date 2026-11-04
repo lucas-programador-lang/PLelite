@@ -197,6 +197,28 @@ document.querySelectorAll(".sidebar-link[data-view]").forEach((btn) => {
 
 logoutBtn.addEventListener("click", () => signOut(auth));
 
+/* ---------- Push: registra o token do aparelho (app Android) ---------- */
+let fcmRegistered = false;
+
+function registerFcmToken(uid) {
+  if (fcmRegistered) return;
+  fcmRegistered = true;
+  let tries = 0;
+  const timer = setInterval(async () => {
+    const token = window.AndroidBridge?.getFcmToken?.();
+    if (token) {
+      clearInterval(timer);
+      try {
+        await set(ref(db, `users/${uid}/fcmTokens/${token}`), true);
+      } catch (e) {
+        console.error("Erro ao salvar token de push:", e);
+      }
+    } else if (++tries > 15) {
+      clearInterval(timer);
+    }
+  }, 1000);
+}
+
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     window.location.href = "login.html";
@@ -220,6 +242,7 @@ onAuthStateChanged(auth, (user) => {
     currentUserName = userData.name || user.email;
     currentUserReferredBy = userData.referredBy || null;
     updateSidebarUser(currentUserName);
+    registerFcmToken(user.uid);
 
     // Só preenche o formulário de "Minha Conta" na primeira vez — assim não
     // apaga o que a pessoa está digitando se o registro mudar em tempo real.
