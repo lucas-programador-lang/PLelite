@@ -185,23 +185,48 @@ sidebarToggleEl.addEventListener("click", openSidebar);
 sidebarCloseEl.addEventListener("click", closeSidebar);
 sidebarOverlayEl.addEventListener("click", closeSidebar);
 
-/* ---------- Roteamento (hash) ----------
- * Cada seção tem uma URL própria: index.html#/tutoriais, index.html#/sorteios...
- * - botão Voltar/Avançar do navegador (e do Android) navega entre as seções;
+/* ---------- Roteamento do navegador (History API) ----------
+ * Cada seção tem uma URL limpa: /tutoriais, /sorteios, /minha-conta...
+ * ("/" é a seção Início).
+ * - Voltar/Avançar do navegador (e do Android) navega entre as seções;
  * - recarregar a página (F5) continua na mesma seção;
  * - dá pra copiar e compartilhar o link de uma seção.
- * Usa hash (e não caminhos /tutoriais) porque o site é estático: um caminho
- * real daria 404 ao recarregar. Hash funciona em qualquer hospedagem e no WebView. */
+ * Requer que o servidor devolva index.html para esses caminhos: no Cloudflare
+ * Pages isso é feito pelo arquivo _redirects (e 404.html cobre o GitHub Pages).
+ * Links antigos no formato /#/tutoriais continuam funcionando. */
 const DEFAULT_VIEW = "inicio";
 const viewLinks = document.querySelectorAll(".sidebar-link[data-view]");
 const validViews = new Set([...viewLinks].map((b) => b.dataset.view));
 
-function viewFromHash() {
+// Rota guardada pelo 404.html (hospedagem sem rewrite): restaura a URL pedida.
+try {
+  const saved = sessionStorage.getItem("plelite:redirect");
+  if (saved) {
+    sessionStorage.removeItem("plelite:redirect");
+    if (location.pathname === "/" || location.pathname === "/index.html") {
+      history.replaceState(null, "", saved);
+    }
+  }
+} catch (e) {}
+
+function pathForView(name) {
+  return name === DEFAULT_VIEW ? "/" : `/${name}`;
+}
+
+function viewFromLocation() {
   let name = "";
   try {
-    name = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+    name = decodeURIComponent(location.pathname.replace(/^\/+|\/+$/g, ""));
   } catch {
     name = "";
+  }
+  // Compatibilidade com links antigos: /#/tutoriais
+  if (!name || name === "index.html") {
+    try {
+      name = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+    } catch {
+      name = "";
+    }
   }
   return validViews.has(name) ? name : DEFAULT_VIEW;
 }
@@ -214,22 +239,35 @@ function showView(name) {
   window.scrollTo(0, 0);
 }
 
+function navigateToView(name) {
+  const target = pathForView(name);
+  if (location.pathname !== target || location.hash) {
+    history.pushState({ view: name }, "", target + location.search);
+  }
+  showView(name);
+}
+
 viewLinks.forEach((btn) => {
   btn.addEventListener("click", () => {
-    // Mudar o hash dispara "hashchange", que troca a seção e cria a entrada no histórico.
-    if (viewFromHash() !== btn.dataset.view || !location.hash) {
-      location.hash = `/${btn.dataset.view}`;
-    }
+    navigateToView(btn.dataset.view);
     closeSidebar();
   });
 });
 
-window.addEventListener("hashchange", () => {
-  showView(viewFromHash());
+window.addEventListener("popstate", () => {
+  showView(viewFromLocation());
   closeSidebar();
 });
 
-showView(viewFromHash());
+// Normaliza a URL inicial (ex.: /#/tutoriais -> /tutoriais, /inicio -> /, rota inválida -> /).
+{
+  const initial = viewFromLocation();
+  const canonical = pathForView(initial);
+  if (location.pathname !== canonical || location.hash) {
+    history.replaceState({ view: initial }, "", canonical + location.search);
+  }
+  showView(initial);
+}
 
 /* ---------- Guarda de rota (em tempo real: reage a bloqueio/autorização ao vivo) ---------- */
 
@@ -273,7 +311,7 @@ logoutBtn.addEventListener("click", async () => {
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-    window.location.href = "login.html";
+    window.location.href = "/login";
     return;
   }
 
