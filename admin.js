@@ -366,10 +366,15 @@ function renderUsersTable() {
         <td>${escapeHtml(u.name || "—")}</td>
         <td>${escapeHtml(u.email || "—")}</td>
         <td>${statusTag}</td>
-        <td>${u.role === "admin" ? "Administrador" : "Usuário"}${u.referredBy ? `<div style="margin-top:4px;"><span class="status-tag status-ativa">Elegível</span> <span style="font-size:10.5px;color:var(--text-muted);">via: ${escapeHtml(u.referredBy)}</span></div>` : ""}</td>
+        <td>${u.role === "admin" ? "Administrador" : "Usuário"}${u.referredBy
+          ? `<div style="margin-top:4px;"><span class="status-tag status-ativa">Elegível</span> <span style="font-size:10.5px;color:var(--text-muted);">via: ${escapeHtml(u.referredBy)}</span></div>`
+          : `<div style="margin-top:4px;"><span class="status-tag status-cancelada">Não elegível</span></div>`}</td>
         <td>
           <div class="row-actions">
             <button class="btn-mini" data-action="edit" data-uid="${uid}">Editar</button>
+            ${u.referredBy
+              ? `<button class="btn-mini" data-action="make-not-eligible" data-uid="${uid}">Tirar elegível</button>`
+              : `<button class="btn-mini success" data-action="make-eligible" data-uid="${uid}">Tornar elegível</button>`}
             ${!u.isAuthorized
               ? `<button class="btn-mini success" data-action="authorize" data-uid="${uid}">Autorizar</button>`
               : `<button class="btn-mini" data-action="deauthorize" data-uid="${uid}">Remover autorização</button>`}
@@ -456,6 +461,12 @@ document.getElementById("removeEligibleBtn").addEventListener("click", () => set
 async function handleUserAction(action, uid) {
   if (action === "edit") {
     openEditUserModal(uid);
+    return;
+  }
+  if (action === "make-eligible" || action === "make-not-eligible") {
+    selectedUsers.clear();
+    selectedUsers.add(uid);
+    await setEligibility(action === "make-eligible");
     return;
   }
   const u = usersCache[uid];
