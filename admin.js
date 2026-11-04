@@ -84,17 +84,54 @@ onAuthStateChanged(auth, (user) => {
 
 /* ---------- Abas ---------- */
 
+/* ---------- Roteamento (hash) ----------
+ * Cada aba tem uma URL própria: admin.html#/users, admin.html#/tutorials...
+ * Voltar/Avançar do navegador troca de aba, F5 continua na mesma aba e o link
+ * pode ser copiado. Hash funciona em qualquer hospedagem estática e no WebView. */
+const DEFAULT_TAB = "overview";
+let tabsInitialized = false;
+
 function initTabs() {
+  if (tabsInitialized) return;
+  tabsInitialized = true;
+
   const tabs = document.querySelectorAll(".admin-tab");
+  const validTabs = new Set([...tabs].map((t) => t.dataset.tab));
+
+  function tabFromHash() {
+    let name = "";
+    try {
+      name = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+    } catch {
+      name = "";
+    }
+    return validTabs.has(name) ? name : DEFAULT_TAB;
+  }
+
+  function showTab(name) {
+    tabs.forEach((t) => t.classList.toggle("is-active", t.dataset.tab === name));
+    document.querySelectorAll(".admin-section").forEach((s) => {
+      s.classList.toggle("is-active", s.id === `tab-${name}`);
+    });
+    window.scrollTo(0, 0);
+  }
+
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      tabs.forEach((t) => t.classList.remove("is-active"));
-      document.querySelectorAll(".admin-section").forEach((s) => s.classList.remove("is-active"));
-      tab.classList.add("is-active");
-      document.getElementById(`tab-${tab.dataset.tab}`).classList.add("is-active");
+      // Mudar o hash dispara "hashchange", que troca a aba e cria a entrada no histórico.
+      if (tabFromHash() !== tab.dataset.tab || !location.hash) {
+        location.hash = `/${tab.dataset.tab}`;
+      }
       closeSidebar();
     });
   });
+
+  window.addEventListener("hashchange", () => {
+    showTab(tabFromHash());
+    closeSidebar();
+  });
+
+  showTab(tabFromHash());
 }
 
 /* ---------- Sidebar (gaveta no mobile) ---------- */
