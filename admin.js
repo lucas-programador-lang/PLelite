@@ -48,7 +48,7 @@ let editingTutorialId = null;
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-    window.location.href = "login.html";
+    window.location.href = "/login";
     return;
   }
 
@@ -84,11 +84,13 @@ onAuthStateChanged(auth, (user) => {
 
 /* ---------- Abas ---------- */
 
-/* ---------- Roteamento (hash) ----------
- * Cada aba tem uma URL própria: admin.html#/users, admin.html#/tutorials...
+/* ---------- Roteamento do navegador (History API) ----------
+ * Cada aba tem uma URL limpa: /admin (visão geral), /admin/users, /admin/tutorials...
  * Voltar/Avançar do navegador troca de aba, F5 continua na mesma aba e o link
- * pode ser copiado. Hash funciona em qualquer hospedagem estática e no WebView. */
+ * pode ser copiado. Requer o rewrite de /admin/* no _redirects (Cloudflare Pages).
+ * Links antigos no formato /admin#/users continuam funcionando. */
 const DEFAULT_TAB = "overview";
+const ADMIN_BASE = "/admin";
 let tabsInitialized = false;
 
 function initTabs() {
@@ -98,12 +100,37 @@ function initTabs() {
   const tabs = document.querySelectorAll(".admin-tab");
   const validTabs = new Set([...tabs].map((t) => t.dataset.tab));
 
-  function tabFromHash() {
+  // Rota guardada pelo 404.html (hospedagem sem rewrite): restaura a URL pedida.
+  try {
+    const saved = sessionStorage.getItem("plelite:redirect");
+    if (saved) {
+      sessionStorage.removeItem("plelite:redirect");
+      if (/^\/admin(\.html)?\/?$/.test(location.pathname)) {
+        history.replaceState(null, "", saved);
+      }
+    }
+  } catch (e) {}
+
+  function pathForTab(name) {
+    return name === DEFAULT_TAB ? ADMIN_BASE : `${ADMIN_BASE}/${name}`;
+  }
+
+  function tabFromLocation() {
     let name = "";
     try {
-      name = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+      name = decodeURIComponent(
+        location.pathname.replace(/^\/admin(\.html)?/, "").replace(/^\/+|\/+$/g, "")
+      );
     } catch {
       name = "";
+    }
+    // Compatibilidade com links antigos: /admin#/users
+    if (!name) {
+      try {
+        name = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+      } catch {
+        name = "";
+      }
     }
     return validTabs.has(name) ? name : DEFAULT_TAB;
   }
@@ -118,20 +145,27 @@ function initTabs() {
 
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      // Mudar o hash dispara "hashchange", que troca a aba e cria a entrada no histórico.
-      if (tabFromHash() !== tab.dataset.tab || !location.hash) {
-        location.hash = `/${tab.dataset.tab}`;
+      const target = pathForTab(tab.dataset.tab);
+      if (location.pathname !== target || location.hash) {
+        history.pushState({ tab: tab.dataset.tab }, "", target + location.search);
       }
+      showTab(tab.dataset.tab);
       closeSidebar();
     });
   });
 
-  window.addEventListener("hashchange", () => {
-    showTab(tabFromHash());
+  window.addEventListener("popstate", () => {
+    showTab(tabFromLocation());
     closeSidebar();
   });
 
-  showTab(tabFromHash());
+  // Normaliza a URL inicial (ex.: /admin#/users -> /admin/users, aba inválida -> /admin).
+  const initial = tabFromLocation();
+  const canonical = pathForTab(initial);
+  if (location.pathname !== canonical || location.hash) {
+    history.replaceState({ tab: initial }, "", canonical + location.search);
+  }
+  showTab(initial);
 }
 
 /* ---------- Sidebar (gaveta no mobile) ---------- */
