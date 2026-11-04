@@ -195,8 +195,6 @@ document.querySelectorAll(".sidebar-link[data-view]").forEach((btn) => {
 
 /* ---------- Guarda de rota (em tempo real: reage a bloqueio/autorização ao vivo) ---------- */
 
-logoutBtn.addEventListener("click", () => signOut(auth));
-
 /* ---------- Push: registra o token do aparelho (app Android) ---------- */
 let fcmRegistered = false;
 
@@ -218,6 +216,22 @@ function registerFcmToken(uid) {
     }
   }, 1000);
 }
+
+// Ao sair da conta, remove o token deste aparelho do usuário — assim ele
+// deixa de receber avisos dessa conta no celular.
+logoutBtn.addEventListener("click", async () => {
+  try {
+    const token = window.AndroidBridge?.getFcmToken?.();
+    const uid = auth.currentUser?.uid;
+    if (token && uid) {
+      await set(ref(db, `users/${uid}/fcmTokens/${token}`), null);
+    }
+  } catch (e) {
+    console.error("Erro ao remover token de push:", e);
+  }
+  fcmRegistered = false;
+  signOut(auth);
+});
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
