@@ -185,15 +185,51 @@ sidebarToggleEl.addEventListener("click", openSidebar);
 sidebarCloseEl.addEventListener("click", closeSidebar);
 sidebarOverlayEl.addEventListener("click", closeSidebar);
 
-document.querySelectorAll(".sidebar-link[data-view]").forEach((btn) => {
+/* ---------- Roteamento (hash) ----------
+ * Cada seção tem uma URL própria: index.html#/tutoriais, index.html#/sorteios...
+ * - botão Voltar/Avançar do navegador (e do Android) navega entre as seções;
+ * - recarregar a página (F5) continua na mesma seção;
+ * - dá pra copiar e compartilhar o link de uma seção.
+ * Usa hash (e não caminhos /tutoriais) porque o site é estático: um caminho
+ * real daria 404 ao recarregar. Hash funciona em qualquer hospedagem e no WebView. */
+const DEFAULT_VIEW = "inicio";
+const viewLinks = document.querySelectorAll(".sidebar-link[data-view]");
+const validViews = new Set([...viewLinks].map((b) => b.dataset.view));
+
+function viewFromHash() {
+  let name = "";
+  try {
+    name = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+  } catch {
+    name = "";
+  }
+  return validViews.has(name) ? name : DEFAULT_VIEW;
+}
+
+function showView(name) {
+  viewLinks.forEach((b) => b.classList.toggle("is-active", b.dataset.view === name));
+  document.querySelectorAll(".app-view").forEach((v) => {
+    v.classList.toggle("is-active", v.id === `view-${name}`);
+  });
+  window.scrollTo(0, 0);
+}
+
+viewLinks.forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".sidebar-link[data-view]").forEach((b) => b.classList.remove("is-active"));
-    document.querySelectorAll(".app-view").forEach((v) => v.classList.remove("is-active"));
-    btn.classList.add("is-active");
-    document.getElementById(`view-${btn.dataset.view}`).classList.add("is-active");
+    // Mudar o hash dispara "hashchange", que troca a seção e cria a entrada no histórico.
+    if (viewFromHash() !== btn.dataset.view || !location.hash) {
+      location.hash = `/${btn.dataset.view}`;
+    }
     closeSidebar();
   });
 });
+
+window.addEventListener("hashchange", () => {
+  showView(viewFromHash());
+  closeSidebar();
+});
+
+showView(viewFromHash());
 
 /* ---------- Guarda de rota (em tempo real: reage a bloqueio/autorização ao vivo) ---------- */
 
