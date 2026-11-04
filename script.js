@@ -587,14 +587,11 @@ function renderRaffleInfo() {
       <span class="metric-label">RESULTADO</span>
       <span class="metric-value" style="font-size:19px;">${raffle.winner ? escapeHtml(raffle.winner) : "Ainda não realizado"}</span>
     </div>
-    <div class="metric-card">
+    ${isEligible ? `<div class="metric-card">
       <span class="metric-label">SUA ELEGIBILIDADE</span>
-      <span class="status-tag ${isEligible ? "status-ativa" : "status-cancelada"}" style="display:inline-block;">
-        ${isEligible ? "Elegível" : "Não elegível"}
-      </span>
-      ${!isEligible ? `<p class="raffle-note">Somente quem entrou pelo link de indicação participa.</p>` : ""}
+      <span class="status-tag status-ativa" style="display:inline-block;">Elegível</span>
       ${joinButton}
-    </div>
+    </div>` : ""}
     <div class="metric-card" style="grid-column:1 / -1;">
       <span class="metric-label">QUEM PARTICIPOU DO SORTEIO</span>
       <div class="raffle-body">${participantsList}</div>
