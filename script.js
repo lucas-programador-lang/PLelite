@@ -237,6 +237,25 @@ function showView(name) {
     v.classList.toggle("is-active", v.id === `view-${name}`);
   });
   window.scrollTo(0, 0);
+  revealActiveTab(name);
+}
+
+// No celular a barra de baixo rola para o lado (7 itens): centraliza o item
+// selecionado para ele aparecer inteiro e legível, sem texto cortado.
+let firstTabReveal = true;
+function revealActiveTab(name) {
+  const link = [...viewLinks].find((b) => b.dataset.view === name);
+  const box = link && link.parentElement;
+  if (!box) return;
+  const smooth = !firstTabReveal;
+  firstTabReveal = false;
+  requestAnimationFrame(() => {
+    if (box.scrollWidth <= box.clientWidth) return; // desktop: nada rola
+    const lr = link.getBoundingClientRect();
+    const br = box.getBoundingClientRect();
+    const left = box.scrollLeft + (lr.left - br.left) - (br.width - lr.width) / 2;
+    box.scrollTo({ left: Math.max(0, left), behavior: smooth ? "smooth" : "auto" });
+  });
 }
 
 function navigateToView(name) {
