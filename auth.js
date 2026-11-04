@@ -147,7 +147,7 @@ if (viewLogin) {
     try {
       await loginUser({ email, password });
       showFeedback("Login realizado com sucesso. Redirecionando…", "success");
-      window.location.href = "index.html";
+      window.location.href = "/";
     } catch (err) {
       showFeedback(traduzErroFirebase(err.code));
     } finally {
