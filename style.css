@@ -3243,3 +3243,46 @@ html.is-app .btn-flutuante-apk { display: none !important; }
   text-decoration: none;
 }
 .btn-youtube:hover { filter: brightness(1.1); }
+
+
+/* ===================================================================
+   Sorteio: textos e pessoas mais legíveis
+=================================================================== */
+.metric-label { font-size: 11.5px; color: var(--text-primary); opacity: 0.85; }
+
+.raffle-body {
+  margin-top: 2px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.raffle-note {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  opacity: 0.85;
+}
+
+.raffle-empty { color: var(--text-muted); }
+
+.raffle-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.raffle-person {
+  display: inline-block;
+  padding: 7px 13px;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--gold-bright);
+  background: rgba(212, 175, 90, 0.12);
+  border: 1px solid rgba(212, 175, 90, 0.35);
+  border-radius: 999px;
+  overflow-wrap: anywhere;
+}
