@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PL Elite</title>
+<script>
+  // Fallback para hospedagens sem "rewrite" (ex.: GitHub Pages): guarda a rota
+  // pedida e abre a página certa; script.js / admin.js restauram a URL.
+  (function () {
+    try {
+      sessionStorage.setItem("plelite:redirect", location.pathname + location.search + location.hash);
+    } catch (e) {}
+    var isAdmin = /^\/admin(\/|$)/.test(location.pathname);
+    location.replace(isAdmin ? "/admin.html" : "/index.html");
+  })();
+</script>
+</head>
+<body></body>
+</html>
