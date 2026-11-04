@@ -13,6 +13,8 @@ import {
   ref, onValue, get, set, update, remove, push
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+const WORKER_URL = "https://apidaplielite.lucas-dev-programador.workers.dev";
+
 const sidebarUserNameEl = document.getElementById("sidebarUserName");
 const sidebarAvatarEl = document.getElementById("sidebarAvatar");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -1174,21 +1176,57 @@ document.getElementById("notifForm").addEventListener("submit", async (e) => {
   const submitBtn = document.getElementById("notifSubmit");
   submitBtn.disabled = true;
 
+  const form = e.target;
   const target = document.getElementById("nTarget").value;
   const titleValue = document.getElementById("nTitle").value.trim();
   const newRef = push(ref(db, "notifications"));
-  await set(newRef, {
-    title: titleValue,
-    type: document.getElementById("nType").value,
-    message: document.getElementById("nMessage").value.trim(),
-    targetUid: target === "all" ? null : target,
-    targetName: target === "all" ? "Todos" : (usersCache[target]?.name || usersCache[target]?.email || "—"),
-    createdAt: Date.now()
-  });
-  logAction(`Enviou o aviso "${titleValue}"`);
-  showToast("Aviso enviado!", "success");
 
-  e.target.reset();
+  try {
+    await set(newRef, {
+      title: titleValue,
+      type: document.getElementById("nType").value,
+      message: document.getElementById("nMessage").value.trim(),
+      targetUid: target === "all" ? null : target,
+      targetName: target === "all" ? "Todos" : (usersCache[target]?.name || usersCache[target]?.email || "—"),
+      createdAt: Date.now()
+    });
+  } catch (err) {
+    console.error("Erro ao salvar aviso:", err);
+    showToast("Não foi possível enviar o aviso. Tente novamente.", "error");
+    submitBtn.disabled = false;
+    return;
+  }
+
+  logAction(`Enviou o aviso "${titleValue}"`);
+
+  // Dispara a notificação push no celular dos usuários (via Worker).
+  // Se o push falhar, o aviso continua salvo e aparece no sininho do site.
+  try {
+    const idToken = await auth.currentUser.getIdToken();
+    const res = await fetch(`${WORKER_URL}/send-push`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${idToken}`
+      },
+      body: JSON.stringify({ notificationId: newRef.key })
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      console.error("Falha no push:", data);
+      showToast("Aviso salvo, mas o push não foi enviado.", "error");
+    } else if (data.sent > 0) {
+      showToast(`Aviso enviado! Push entregue a ${data.sent} aparelho(s).`, "success");
+    } else {
+      showToast("Aviso enviado! Nenhum aparelho com o app registrado ainda.", "success");
+    }
+  } catch (err) {
+    console.error("Erro ao chamar o Worker de push:", err);
+    showToast("Aviso salvo, mas o push não foi enviado.", "error");
+  }
+
+  form.reset();
   submitBtn.disabled = false;
 });
 
