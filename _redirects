@@ -1,0 +1,5 @@
+# Roteamento do navegador (History API): o servidor devolve a página certa
+# para as rotas do app. Vale para Cloudflare Pages e Netlify.
+/admin     /admin.html   200
+/admin/*   /admin.html   200
+/*         /index.html   200
