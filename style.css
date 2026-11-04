@@ -2479,9 +2479,13 @@ select.btn-mini[multiple] option:checked {
 
 .proof-modal-img {
   display: block;
-  width: 100%;
+  /* Não estica imagens pequenas (isso é o que deixava o print borrado/pixelado):
+     mostra no tamanho real, encolhendo só se for maior que o visor. */
+  width: auto;
+  height: auto;
+  max-width: 100%;
   max-height: min(60vh, 560px);
-  object-fit: contain;
+  margin: 0 auto;
   border-radius: var(--radius-md);
   background: #000;
   cursor: zoom-in;
